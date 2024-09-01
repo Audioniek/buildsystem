@@ -21,6 +21,9 @@ Instructions
 
 6. If not done previously, execute sudo ./prepare-for-bs.sh. This will install
    the missing packages, depending on your Linux distribution.
+   Notes: 
+   * Package list is recommended to be updated before running the script (`apt update` for Ubuntu/Debian)
+   * `lsb-release` is required for the script (`apt install -y lsb-release` for Ubuntu/Debian)
 
 7. Download and extract a ready built image for the receiver you want to build
    for and extract the files audio.elf and video.elf from its /boot directory.
