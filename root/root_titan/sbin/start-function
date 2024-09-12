@@ -392,7 +392,7 @@ starthyprid()
 
 		echo "[$0] starthyprid: set UnionTunerType=$tuner"
 
-		sed "s/options spark7162 UnionTunerType=.*/options spark7162 UnionTunerType=$tuner/" -i /etc/modprobe.d/_spark7162.conf
+		sed "s/options spark7162-fe UnionTunerType=.*/options spark7162-fe UnionTunerType=$tuner/" -i /etc/modprobe.d/_spark7162.conf
 		startcec
 		if [ "$1" == "mnt" ];then
 			chmod -R 644 /mnt/network

@@ -101,7 +101,7 @@ insmod $MODDIR/pseudocard.ko
 
 #Set desired mode for tuner 3 here: t=DVB-T, c=DVB-C
 tunertype='t'
-insmod $MODDIR/spark7162.ko UnionTunerType=$tunertype
+insmod $MODDIR/spark7162-fe.ko UnionTunerType=$tunertype
 
 #pti_arg="waitMS=20 videoMem=4096"
 #echo "Full feature pti"
