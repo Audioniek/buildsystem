@@ -1,0 +1,11 @@
+--- a/libavcodec/aacps.c
++++ b/libavcodec/aacps.c
+@@ -396,7 +396,7 @@ static void map_val_20_to_34(INTFLOAT par[PS_MAX_NR_IIDICC])
+     par[ 1] = AAC_HALF_SUM(par[ 0], par[ 1]);
+ }
+ 
+-static void decorrelation(PSContext *ps, INTFLOAT (*out)[32][2], const INTFLOAT (*s)[32][2], int is34)
++static void __attribute__((optimize(0))) decorrelation(PSContext *ps, INTFLOAT (*out)[32][2], const INTFLOAT (*s)[32][2], int is34)
+ {
+     LOCAL_ALIGNED_16(INTFLOAT, power, [34], [PS_QMF_TIME_SLOTS]);
+     LOCAL_ALIGNED_16(INTFLOAT, transient_gain, [34], [PS_QMF_TIME_SLOTS]);

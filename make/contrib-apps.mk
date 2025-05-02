@@ -1,17 +1,11 @@
 #
 # busybox
 #
-BUSYBOX_VER = 1.36.1
+BUSYBOX_VER = 1.28.4
 BUSYBOX_SOURCE = busybox-$(BUSYBOX_VER).tar.bz2
 BUSYBOX_PATCH  = busybox-$(BUSYBOX_VER)-nandwrite.patch
 BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-unicode.patch
 BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-extra.patch
-BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-extra2.patch
-BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-flashcp-small-output.patch
-BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-block-telnet-internet.patch
-BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-recursive_action-fix.patch
-#BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-tar-fix.patch
-BUSYBOX_PATCH += busybox-$(BUSYBOX_VER)-sh4-revert_ifa_flags.patch
 
 $(ARCHIVE)/$(BUSYBOX_SOURCE):
 	$(WGET) https://busybox.net/downloads/$(BUSYBOX_SOURCE)
@@ -151,13 +145,14 @@ $(D)/module_init_tools: $(D)/bootstrap $(D)/lsb $(ARCHIVE)/$(MODULE_INIT_TOOLS_S
 #
 # sysvinit
 #
-SYSVINIT_VER = 3.08
+SYSVINIT_VER = 3.14
 SYSVINIT_SOURCE = sysvinit-$(SYSVINIT_VER).tar.xz
 SYSVINIT_PATCH  = sysvinit-$(SYSVINIT_VER)-crypt-lib.patch
 SYSVINIT_PATCH += sysvinit-$(SYSVINIT_VER)-change-INIT_FIFO.patch
 SYSVINIT_PATCH += sysvinit-$(SYSVINIT_VER)-remove-killall5.patch
 
 $(ARCHIVE)/$(SYSVINIT_SOURCE):
+#	$(WGET) https://download.savannah.gnu.org/releases/sysvinit/$(SYSVINIT_SOURCE)
 	$(WGET) https://github.com/slicer69/sysvinit/releases/download/$(SYSVINIT_VER)/$(SYSVINIT_SOURCE)
 
 $(D)/sysvinit: $(D)/bootstrap $(ARCHIVE)/$(SYSVINIT_SOURCE)
@@ -169,14 +164,22 @@ $(D)/sysvinit: $(D)/bootstrap $(ARCHIVE)/$(SYSVINIT_SOURCE)
 		sed -i -e 's/\ sulogin[^ ]*//' -e 's/pidof\.8//' -e '/ln .*pidof/d' \
 		-e '/bootlogd/d' -e '/utmpdump/d' -e '/mountpoint/d' -e '/mesg/d' src/Makefile; \
 		$(BUILDENV) \
-		$(MAKE) -C src SULOGINLIBS=-lcrypt; \
+		$(MAKE) SULOGINLIBS=-lcrypt; \
 		$(MAKE) install ROOT=$(TARGET_DIR) MANDIR=/.remove
 	rm -f $(addprefix $(TARGET_DIR)/sbin/,fstab-decode runlevel telinit)
 	rm -f $(addprefix $(TARGET_DIR)/usr/bin/,lastb)
-ifeq ($(BOXTYPE), $(filter $(BOXTYPE), fs9000 hs9510 cuberevo cuberevo_mini2 cuberevo_2000hd cuberevo_3000hd))
+ifeq ($(BOXTYPE), $(filter $(BOXTYPE), fortis_hdbox octagon1008 cuberevo cuberevo_mini2 cuberevo_2000hd cuberevo_3000hd))
 	install -m 644 $(SKEL_ROOT)/etc/inittab_ttyAS1 $(TARGET_DIR)/etc/inittab
 else
+ifeq ($(BOXTYPE), $(filter $(BOXTYPE), bre2ze4k hd51 h7 e4hdultra vuduo vuduo2 vuuno vuultimo vuduo4k vuduo4kse vuuno4kse vuzero4k vuultimo4k vuuno4k vusolo4k dm820 dm7080 dm900 dm920 dm8000 dm7020hd dm800se dm800sev2))
+ifeq ($(BOXTYPE), $(filter $(BOXTYPE), dm820 dm7080 dm900 dm920))
+	install -m 644 $(SKEL_ROOT)/etc/inittab_ttyS0_dm $(TARGET_DIR)/etc/inittab
+else
+	install -m 644 $(SKEL_ROOT)/etc/inittab_ttyS0 $(TARGET_DIR)/etc/inittab
+endif
+else
 	install -m 644 $(SKEL_ROOT)/etc/inittab $(TARGET_DIR)/etc/inittab
+endif
 endif
 	$(REMOVE)/sysvinit-$(SYSVINIT_VER)
 	$(TOUCH)
@@ -349,7 +352,7 @@ $(D)/portmap: $(D)/bootstrap $(D)/lsb $(ARCHIVE)/$(PORTMAP_SOURCE) $(ARCHIVE)/po
 #
 # e2fsprogs
 #
-E2FSPROGS_VER = 1.46.5
+E2FSPROGS_VER = 1.47.2
 E2FSPROGS_SOURCE = e2fsprogs-$(E2FSPROGS_VER).tar.gz
 E2FSPROGS_PATCH  = e2fsprogs-$(E2FSPROGS_VER).patch
 
@@ -409,21 +412,19 @@ $(D)/e2fsprogs: $(D)/bootstrap $(D)/util_linux $(ARCHIVE)/$(E2FSPROGS_SOURCE)
 #
 # util_linux
 #
-UTIL_LINUX_MAJOR = 2.39
-UTIL_LINUX_MINOR = .2
+UTIL_LINUX_MAJOR = 2.41
+UTIL_LINUX_MINOR = -rc2
 UTIL_LINUX_VER = $(UTIL_LINUX_MAJOR)$(UTIL_LINUX_MINOR)
 UTIL_LINUX_SOURCE = util-linux-$(UTIL_LINUX_VER).tar.xz
-UTIL_LINUX_PATCH = util-linux-$(UTIL_LINUX_MAJOR)$(UTIL_LINUX_MINOR).patch
 
 $(ARCHIVE)/$(UTIL_LINUX_SOURCE):
-	$(WGET) https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_MAJOR)/$(UTIL_LINUX_SOURCE)
+	$(WGET) https://www.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_MAJOR)/$(UTIL_LINUX_SOURCE)
 
 $(D)/util_linux: $(D)/bootstrap $(D)/zlib $(ARCHIVE)/$(UTIL_LINUX_SOURCE)
 	$(START_BUILD)
 	$(REMOVE)/util-linux-$(UTIL_LINUX_VER)
 	$(UNTAR)/$(UTIL_LINUX_SOURCE)
 	$(CH_DIR)/util-linux-$(UTIL_LINUX_VER); \
-		$(call apply_patches, $(UTIL_LINUX_PATCH)); \
 		$(CONFIGURE) \
 			--prefix=/usr \
 			--mandir=/.remove \
@@ -493,13 +494,14 @@ $(D)/util_linux: $(D)/bootstrap $(D)/zlib $(ARCHIVE)/$(UTIL_LINUX_SOURCE)
 			--without-python \
 			--disable-makeinstall-chown \
 			--without-systemdsystemunitdir \
+			--disable-year2038 \
+			--disable-liblastlog2 \
 		; \
 		$(MAKE) sfdisk mkfs; \
 		install -D -m 755 sfdisk $(TARGET_DIR)/sbin/sfdisk; \
 		install -D -m 755 mkfs $(TARGET_DIR)/sbin/mkfs
 	$(REMOVE)/util-linux-$(UTIL_LINUX_VER)
 	$(TOUCH)
-
 #
 # gptfdisk
 #
@@ -656,7 +658,7 @@ $(D)/ntfs_3g: $(D)/bootstrap $(ARCHIVE)/$(NTFS_3G_SOURCE)
 #
 # mc
 #
-MC_VER = 4.8.30
+MC_VER = 4.8.33
 MC_SOURCE = mc-$(MC_VER).tar.xz
 MC_PATCH  = mc-$(MC_VER).patch
 
@@ -1159,7 +1161,7 @@ $(D)/avahi: $(D)/bootstrap $(D)/expat $(D)/libdaemon $(D)/dbus $(ARCHIVE)/$(AVAH
 #
 # wget
 #
-WGET_VER = 1.21.3
+WGET_VER = 1.25.0
 WGET_SOURCE = wget-$(WGET_VER).tar.gz
 WGET_PATCH = wget-$(WGET_VER).patch
 
@@ -1749,7 +1751,7 @@ $(D)/openssh: $(D)/bootstrap $(D)/zlib $(D)/openssl $(ARCHIVE)/$(OPENSSH_SOURCE)
 #
 # dropbear
 #
-DROPBEAR_VER = 2022.83
+DROPBEAR_VER = 2024.86
 DROPBEAR_SOURCE = dropbear-$(DROPBEAR_VER).tar.bz2
 
 $(ARCHIVE)/$(DROPBEAR_SOURCE):
@@ -1769,7 +1771,7 @@ $(D)/dropbear: $(D)/bootstrap $(D)/zlib $(ARCHIVE)/$(DROPBEAR_SOURCE)
 			--disable-loginfunc \
 			--disable-pam \
 		; \
-		sed -i 's|^\(#define DROPBEAR_SMALL_CODE\).*|\1 0|' default_options.h; \
+		sed -i 's|^\(#define DROPBEAR_SMALL_CODE\).*|\1 0|' src/default_options.h; \
 		$(MAKE) PROGRAMS="dropbear dbclient dropbearkey scp" SCPPROGRESS=1; \
 		$(MAKE) PROGRAMS="dropbear dbclient dropbearkey scp" install DESTDIR=$(TARGET_DIR)
 	$(SILENT)install -m 755 $(SKEL_ROOT)/etc/init.d/dropbear $(TARGET_DIR)/etc/init.d/
@@ -1780,7 +1782,7 @@ $(D)/dropbear: $(D)/bootstrap $(D)/zlib $(ARCHIVE)/$(DROPBEAR_SOURCE)
 #
 # dropbearmulti
 #
-DROPBEARMULTI_VER = 5040f21
+DROPBEARMULTI_VER = 3fcaca8
 DROPBEARMULTI_SOURCE = dropbearmulti-git-$(DROPBEARMULTI_VER).tar.bz2
 DROPBEARMULTI_URL = https://github.com/mkj/dropbear.git
 

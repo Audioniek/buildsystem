@@ -27,7 +27,12 @@ ENIGMA2_DEPS += $(D)/libusb
 ENIGMA2_DEPS += $(D)/libid3tag
 ENIGMA2_DEPS += $(D)/minidlna
 ENIGMA2_DEPS += $(D)/sdparm
-ENIGMA2_DEPS += $(D)/parted 
+#ENIGMA2_DEPS += $(D)/oscam
+ENIGMA2_DEPS += $(D)/parted $(D)/a52dec $(D)/dvb-apps $(D)/libgcrypt $(D)/mpg123 $(D)/harfbuzz
+ENIGMA2_DEPS += $(D)/tools-libmme_host
+ENIGMA2_DEPS += $(D)/tools-libmme_image
+ENIGMA2_DEPS += $(D)/libxmlccwrap $(D)/libcurl 
+ENIGMA2_DEPS += $(D)/libsigc_e2
 endif
 ifneq ($(OPTIMIZATIONS), $(filter $(OPTIMIZATIONS), small size))
 # required for DVDBurn plugin (adds ? Mbyte to image)
@@ -44,24 +49,24 @@ endif
 endif
 
 # determine libsigc++ version
-ifeq ($(E2_DIFF), $(filter $(E2_DIFF), 1))
-ENIGMA2_DEPS  += $(D)/libsigc_e2
-else
-ENIGMA2_DEPS  += $(D)/libsigc
-endif
+#ifeq ($(E2_DIFF), $(filter $(E2_DIFF), 1))
+#ENIGMA2_DEPS  += $(D)/libsigc_e2
+#else
+#ENIGMA2_DEPS  += $(D)/libsigc
+#endif
 
 # determine requirements for media framework
 # Note: for diffs 0, 2, 3, 4 & 5 there are no extra dependencies;
 # these are part of enigma2-plugins
-ifeq ($(E2_DIFF), $(filter $(E2_DIFF), 1)) # diff 1 (local)
-ifeq ($(MEDIAFW), eplayer3)
+#ifeq ($(E2_DIFF), $(filter $(E2_DIFF), 1)) # diff 1 (local)
+#ifeq ($(MEDIAFW), eplayer3)
 ENIGMA2_DEPS  += $(D)/tools-libeplayer3
 E_CONFIG_OPTS += --enable-libeplayer3
-endif
+#endif
 ifeq ($(MEDIAFW), gstreamer)
 ENIGMA2_DEPS  += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_dvbmediasink
 ENIGMA2_DEPS  += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
-E_CONFIG_OPTS += --with-gstversion=1.0 --enable-mediafwgstreamer
+E_CONFIG_OPTS += --with-gstversion=1.0 --enable-mediafwgstreamer --enable-libeplayer3
 endif
 ifeq ($(MEDIAFW), gst-eplayer3)
 ENIGMA2_DEPS  += $(D)/tools-libeplayer3
@@ -69,7 +74,7 @@ ENIGMA2_DEPS  += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_
 ENIGMA2_DEPS  += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
 E_CONFIG_OPTS += --with-gstversion=1.0 --enable-mediafwgstreamer --enable-libeplayer3
 endif
-endif
+#endif
 
 ifeq ($(EXTERNAL_LCD), graphlcd)
 E_CONFIG_OPTS += --with-graphlcd
@@ -120,7 +125,42 @@ yaud-enigma2: yaud-none $(D)/enigma2 $(D)/enigma2-plugins $(D)/enigma2_release
 # enigma2
 #
 REPO_OPENPLI="https://github.com/OpenPLi/enigma2.git"
-REPO_REPLY_1="ssh://gituser@192.168.178.17/volume1//git/audioniek-openpli.git"
+#REPO_REPLY_1="ssh://gituser@192.168.178.17/volume1//git/audioniek-openpli.git"
+#REPO_REPLY_1="https://github.com/ainouna/GraterliaOS-OpenPLi-1.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-openpli-fulan_king.git"
+#REPO_REPLY_1="https://github.com/kingvuplus/enigma2-1.git"
+#REPO_REPLY_1="https://github.com/ainouna/b-psh4.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-openpli-fulan-king.git"
+#REPO_REPLY_1="https://github.com/OpenSH4/enigma2-pli-arp.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-atv.git"
+#REPO_REPLY_1="https://github.com/Ednaz/enigma2-openpli-sh4.git"
+#REPO_REPLY_1="https://github.com/vuteam/spa.git"
+#REPO_REPLY_1="https://github.com/momi133/dvbapp2.git"
+#REPO_REPLY_1="https://github.com/popazerty/enigma2-2.git"
+#REPO_REPLY_1="https://github.com/popazerty/SDG-gui.git"
+#REPO_REPLY_1="https://github.com/popazerty/beyonwiz-stb.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-2-DRD.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-pli-arp.git"
+#REPO_REPLY_1="https://github.com/Taapat/enigma2-openpli-fulan.git"
+#REPO_REPLY_1="https://github.com/ainouna/openpli-enigma2.git"
+#REPO_REPLY_1="https://github.com/ainouna/openNFR-gui2.git"
+#REPO_REPLY_1="https://github.com/popazerty/openNFR-gui2.git"
+#REPO_REPLY_1="https://github.com/ainouna/openatv-ts.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-atv-5.3.git"
+#REPO_REPLY_1="https://github.com/ainouna/openpli-release4.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-openpli-vuplus.git"
+#REPO_REPLY_1="https://github.com/ainouna/openhdf-enigma2.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-atv-6.1.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma-2.3-openplus.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-pli-arp.git"
+#REPO_REPLY_1="https://github.com/atefganm/openpli-enigma2-sh4.git"
+#REPO_REPLY_1="https://github.com/OpenSH4/enigma2-pli-arp.git"
+#REPO_REPLY_1="https://bitbucket.org/beyonwiz/easy-ui-4.gi"
+#REPO_REPLY_1="https://github.com/popazerty/openpli-enigma2-sh4"
+#REPO_REPLY_1="https://github.com/Vasiliks/enigma2-openpli-sh4.git"
+#REPO_REPLY_1="https://github.com/ainouna/enigma2-openpli-fulan-SI2.git"
+#REPO_REPLY_1="https://github.com/ainouna/GraterliaOS-OpenPLi-herpoi.git"
+
 
 $(D)/enigma2.do_prepare: | $(ENIGMA2_DEPS)
 	REPO_0=$(REPO_OPENPLI); \
@@ -163,7 +203,7 @@ $(D)/enigma2.do_prepare: | $(ENIGMA2_DEPS)
 		cd $(SOURCE_DIR)/enigma2; \
 		echo -n "Unpacking VFD-Icons plugins..."; \
 		patch -p1 -s -i "$(PATCHES)/build-enigma2/vfd-icons.patch"; echo " done."; \
-		rm -rf $(TARGET_DIR)/usr/local/share/enigma2/rc_models; \
+		rm -rf $(TARGET_DIR)/usr/share/enigma2/rc_models; \
 		echo; \
 		echo -n "Patching remote control files..."; \
 		patch -p1 -s -i "$(PATCHES)/build-enigma2/rc-models.patch"; \
@@ -188,9 +228,9 @@ $(SOURCE_DIR)/enigma2/config.status:
 			--host=$(TARGET) \
 			$(E_CONFIG_OPTS) \
 			--with-libsdl=no \
-			--datadir=/usr/local/share \
+			--datadir=/usr/share \
 			--libdir=/usr/lib \
-			--bindir=/usr/local/bin \
+			--bindir=/usr/bin \
 			--prefix=/usr \
 			--sysconfdir=/etc \
 			--with-boxtype=$(BOXTYPE) \
@@ -205,39 +245,17 @@ $(D)/enigma2.do_compile: $(SOURCE_DIR)/enigma2/config.status
 		$(MAKE) all
 	@touch $@
 
-PLI_SKIN_PATCH = build-enigma2/PLi-HD_skin.patch
-REPO_PLIHD="https://github.com/littlesat/skin-PLiHD.git"
-HEAD=master
-#REVISION_HD=8c9e43bd5b5fbec2d0e0e86d8e9d69a94f139054
-REPO_0=$(REPO_PLIHD)
-FW=$(MEDIAFW)
 $(D)/enigma2: $(D)/enigma2.do_prepare $(D)/enigma2.do_compile
 	$(MAKE) -C $(SOURCE_DIR)/enigma2 install DESTDIR=$(TARGET_DIR)
-	@echo -n "Stripping..."
-	$(SILENT)if [ -e $(TARGET_DIR)/usr/bin/enigma2 ]; then \
+	if [ -e $(TARGET_DIR)/usr/bin/enigma2 ]; then \
 		$(TARGET)-strip $(TARGET_DIR)/usr/bin/enigma2; \
 	fi
-	$(SILENT)if [ -e $(TARGET_DIR)/usr/local/bin/enigma2 ]; then \
-		$(TARGET)-strip $(TARGET_DIR)/usr/local/bin/enigma2; \
+	if [ -e $(TARGET_DIR)/usr/bin/enigma2 ]; then \
+		$(TARGET)-strip $(TARGET_DIR)/usr/bin/enigma2; \
 	fi
-	$(SILENT)echo " done."
-	$(SILENT)echo
-	$(SILENT)echo "Adding PLi-HD skin"
-	$(SILENT)if [ ! -d $(ARCHIVE)/PLi-HD_skin.git ]; then \
-		(echo -n "Cloning PLi-HD skin git..."; git clone -q -b $(HEAD) $(REPO_0) $(ARCHIVE)/PLi-HD_skin.git; echo " done."); \
-	else \
-		(cd $(ARCHIVE)/enigma2-pli-nightly.git; echo -n "Updating PLi-HD skin git..."; git pull -q; echo " done."; cd "$(BUILD_TMP)"); \
-	fi
-#	$(SILENT)(cd $(ARCHIVE)/PLi-HD_skin.git; echo -n "Checkout commit $(REVISION_HD)..."; git checkout -q $(REVISION_HD); echo " done.")
-	$(SILENT)cp -ra $(ARCHIVE)/PLi-HD_skin.git/usr/share/enigma2/* $(TARGET_DIR)/usr/local/share/enigma2
-	@echo -e "$(TERM_RED)Applying Patch:$(TERM_NORMAL) $(PLI_SKIN_PATCH)"; $(PATCH)/$(PLI_SKIN_PATCH)
-	@echo -e "Patching $(TERM_GREEN_BOLD)PLi-HD skin$(TERM_NORMAL) completed."
-#ifneq ($(BOXTYPE), $(filter $(BOXTYPE), spark spark7162 cuberevo cuberevo_250hd cuberevo_mini_fta cuberevo_mini cuberevo_mini2 cuberevo_2000hd cuberevo3000hd cuberevo_9500hd fs9000 hs7110 hs7420 hs7810a hs7119 hs7429 hs7819 hs8200 hs9510 tf7700 ufs912 ufs913))
-#	$(SILENT)rm -rf $(TARGET_DIR)/usr/local/share/enigma2/PLi-FullHD
-#	$(SILENT)rm -rf $(TARGET_DIR)/usr/local/share/enigma2/PLi-FullNightHD
-#endif
 	$(TOUCH)
 
+	
 enigma2-clean:
 	rm -f $(D)/enigma2
 	rm -f $(D)/enigma2.do_compile

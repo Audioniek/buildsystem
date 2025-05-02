@@ -1,0 +1,40 @@
+From 891e11d98227781ce0d89d7144543447d5b08e24 Mon Sep 17 00:00:00 2001
+From: "liberato@chromium.org" <liberato@chromium.org>
+Date: Wed, 7 Jul 2021 19:01:22 -0700
+Subject: [PATCH] Add av_stream_get_first_dts for Chromium
+
+[foutrelis: adjust for new FFStream struct replacing AVStreamInternal]
+
+diff --git a/libavformat/avformat.h b/libavformat/avformat.h
+index f12fa7d..0b9fd1f 100644
+--- a/libavformat/avformat.h
++++ b/libavformat/avformat.h
+@@ -1215,6 +1215,10 @@
+ 
+ struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
+ 
++// Chromium: We use the internal field first_dts vvv
++int64_t    av_stream_get_first_dts(const AVStream *st);
++// Chromium: We use the internal field first_dts ^^^
++
+ #define AV_PROGRAM_RUNNING 1
+ 
+ /**
+diff --git a/libavformat/utils.c b/libavformat/utils.c
+index cf4d68b..d3e7488 100644
+--- a/libavformat/utils.c
++++ b/libavformat/utils.c
+@@ -88,6 +88,13 @@ static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
+     return pkt->size > orig_size ? pkt->size - orig_size : ret;
+ }
+ 
++// Chromium: We use the internal field first_dts vvv
++int64_t av_stream_get_first_dts(const AVStream *st)
++{
++  return cffstream(st)->first_dts;
++}
++// Chromium: We use the internal field first_dts ^^^
++
+ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
+ {
+ #if FF_API_INIT_PACKET

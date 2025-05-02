@@ -13,7 +13,7 @@ enigma2_release_cube_common:
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7109.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-cx24116.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-stv6306.fw $(RELEASE_DIR)/lib/firmware/
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_cube.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_cube.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # release_cube_common_tuner
@@ -97,7 +97,7 @@ enigma2_release_ipbox9900: enigma2_release_common_ipbox
 	$(SILENT)cp $(TARGET_DIR)/lib/modules/$(KERNEL_VER)/extra/rmu/rmu.ko $(RELEASE_DIR)/lib/modules/
 	$(SILENT)cp $(TARGET_DIR)/lib/modules/$(KERNEL_VER)/extra/fan_ipbox99xx/ipbox_fan.ko $(RELEASE_DIR)/lib/modules/
 	$(SILENT)cp -p $(SKEL_ROOT)/release/tvmode_ipbox $(RELEASE_DIR)/usr/bin/tvmode
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # ipbox99
@@ -106,7 +106,7 @@ enigma2_release_ipbox99: enigma2_release_common_ipbox
 	$(SILENT)cp $(TARGET_DIR)/lib/modules/$(KERNEL_VER)/extra/frontcontroller/ipbox99xx/micom.ko $(RELEASE_DIR)/lib/modules/
 	$(SILENT)cp $(TARGET_DIR)/lib/modules/$(KERNEL_VER)/extra/fan_ipbox99xx/ipbox_fan.ko $(RELEASE_DIR)/lib/modules/
 	$(SILENT)cp -p $(SKEL_ROOT)/release/tvmode_ipbox $(RELEASE_DIR)/usr/bin/tvmode
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # ipbox55
@@ -114,7 +114,7 @@ enigma2_release_ipbox99: enigma2_release_common_ipbox
 enigma2_release_ipbox55: enigma2_release_common_ipbox
 	$(SILENT)cp $(TARGET_DIR)/lib/modules/$(KERNEL_VER)/extra/frontcontroller/ipbox55/front.ko $(RELEASE_DIR)/lib/modules/
 	$(SILENT)cp -p $(SKEL_ROOT)/release/tvmode_ipbox55 $(RELEASE_DIR)/usr/bin/tvmode
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ipbox.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # ufs910
@@ -136,7 +136,7 @@ enigma2_release_ufs910:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 ifeq ($(DESTINATION), flash)
 	$(MAKE) $(D)/ufs910installer
 endif
@@ -158,7 +158,7 @@ enigma2_release_ufs912:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ufs912.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ufs912.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 
@@ -180,7 +180,7 @@ enigma2_release_ufs913:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ufs913.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ufs913.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 
@@ -204,7 +204,7 @@ enigma2_release_ufs922:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/ufs9xxVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 ifeq ($(DESTINATION), flash)
@@ -223,7 +223,7 @@ enigma2_release_ufc960:
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7109.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-cx21143.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-stv6306.fw $(RELEASE_DIR)/lib/firmware/
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_ufs910.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # spark
@@ -245,7 +245,7 @@ enigma2_release_spark:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/sparkVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/sparkVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_spark.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_spark.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 
@@ -271,7 +271,7 @@ enigma2_release_spark7162:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_spark.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_spark.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # fs9000
@@ -289,7 +289,7 @@ enigma2_release_fs9000:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/fs9000VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/fs9000VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs8200
@@ -312,7 +312,7 @@ enigma2_release_hs8200:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs8200VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs8200VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs9510
@@ -332,7 +332,7 @@ enigma2_release_hs9510:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs9510VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs9510VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7110
@@ -346,7 +346,7 @@ enigma2_release_hs7110:
 	$(SILENT)cp $(SKEL_ROOT)/boot/video_7111.elf $(RELEASE_DIR)/boot/video.elf
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7111.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7111_mb618.fw $(RELEASE_DIR)/lib/firmware/component.fw
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7420
@@ -366,7 +366,7 @@ enigma2_release_hs7420:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs742xVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs742xVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7429
@@ -386,7 +386,7 @@ enigma2_release_hs7429:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs742xVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs742xVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+#	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7810a
@@ -406,7 +406,7 @@ enigma2_release_hs7810a:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7119
@@ -426,7 +426,7 @@ enigma2_release_hs7119:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hs7819
@@ -446,7 +446,7 @@ enigma2_release_hs7819:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hs7810aVFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_fortis.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # atemio520
@@ -460,7 +460,7 @@ enigma2_release_atemio520:
 	$(SILENT)cp $(SKEL_ROOT)/boot/video_7111.elf $(RELEASE_DIR)/boot/video.elf
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7111.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7111_mb618.fw $(RELEASE_DIR)/lib/firmware/component.fw
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # hl101
@@ -483,7 +483,7 @@ enigma2_release_hl101:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_hl101.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_hl101.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # vip1_v1
@@ -508,7 +508,7 @@ enigma2_release_vip1_v1:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 
@@ -535,7 +535,7 @@ enigma2_release_vip1_v2:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/spark7162VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 	$(SILENT)touch $(RELEASE_DIR)/etc/.rccode
 	$(SILENT)echo "1" > $(RELEASE_DIR)/etc/.rccode
 
@@ -544,7 +544,7 @@ enigma2_release_vip1_v2:
 #
 enigma2_release_vip2: enigma2_release_vip1_v2
 	$(SILENT)cp -dp $(SKEL_ROOT)/release/lircd_vip_rc12.conf $(RELEASE_DIR)/etc/lircd.conf
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_vip.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # adb_box
@@ -572,7 +572,7 @@ enigma2_release_adb_box:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/adb_5800VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/adb_5800VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_adb_box.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_adb_box.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # adb2850
@@ -596,7 +596,7 @@ enigma2_release_adb_2850:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/adb_5800VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/adb_5800VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_adb_box.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_adb_box.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # tf7700
@@ -611,7 +611,7 @@ enigma2_release_tf7700:
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-cx24116.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)cp -f $(SKEL_ROOT)/release/fstab_tf7700 $(RELEASE_DIR)/etc/fstab
 	$(SILENT)rm -f $(RELEASE_DIR)/bin/vdstandby
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_tf7700.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_tf7700.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 ifeq ($(DESTINATION), flash)
 	$(MAKE) $(D)/tfinstaller
 endif
@@ -629,7 +629,7 @@ enigma2_release_vitamin_hd5000:
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7111.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-avl6222.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7111_mb618.fw $(RELEASE_DIR)/lib/firmware/component.fw
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_vitamin_hd5000.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_vitamin_hd5000.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # sagemcom88
@@ -646,7 +646,7 @@ enigma2_release_sagemcom88:
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-avl6222.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7105_pdk7105.fw $(RELEASE_DIR)/lib/firmware/component.fw
 	$(SILENT)cp -dp $(SKEL_ROOT)/release/lircd_sagemcom88.conf $(RELEASE_DIR)/etc/lircd.conf
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_sagemcom88.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_sagemcom88.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # arivalink200
@@ -661,7 +661,7 @@ enigma2_release_arivalink200:
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-cx24116.fw $(RELEASE_DIR)/lib/firmware/
 	$(SILENT)mkdir -p $(RELEASE_DIR)/var/run/lirc
 	$(SILENT)cp -dp $(SKEL_ROOT)/release/lircd_arivalink200.conf $(RELEASE_DIR)/etc/lircd.conf
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_arivalink200.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_arivalink200.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # pace7241
@@ -685,7 +685,7 @@ enigma2_release_pace7241:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/pace7241VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/pace7241VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_sagemcom88.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_sagemcom88.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # opt9600
@@ -707,7 +707,7 @@ enigma2_release_opt9600:
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/opt9600VFD; \
 	fi
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-avl2108.fw $(RELEASE_DIR)/lib/firmware/
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # opt9600mini
@@ -721,7 +721,7 @@ enigma2_release_opt9600mini:
 	$(SILENT)cp $(SKEL_ROOT)/boot/video_7111.elf $(RELEASE_DIR)/boot/video.elf
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7111.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7111_mb618.fw $(RELEASE_DIR)/lib/firmware/component.fw
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 
 #
 # opt9600prima
@@ -735,7 +735,7 @@ enigma2_release_opt9600prima:
 	$(SILENT)cp $(SKEL_ROOT)/boot/audio_7105.elf $(RELEASE_DIR)/boot/audio.elf
 	$(SILENT)cp $(SKEL_ROOT)/firmware/component_7105_pdk7105.fw $(RELEASE_DIR)/lib/firmware/component.fw
 	$(SILENT)cp $(SKEL_ROOT)/firmware/dvb-fe-avl2108.fw $(RELEASE_DIR)/lib/firmware/
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_opt9600.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 ifeq ($(DESTINATION), flash)
 	$(MAKE) $(D)/opt9600primainstaller
 endif
@@ -759,7 +759,7 @@ enigma2_release_hchs8100:
 		cp -rf $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hchsxx00VFD/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/SystemPlugins/VFD-Icons; \
 		rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/hchsxx00VFD; \
 	fi
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/keymap_hchs8100.xml $(RELEASE_DIR)/usr/local/share/enigma2/keymap.xml
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/keymap_hchs8100.xml $(RELEASE_DIR)/usr/share/enigma2/keymap.xml
 ifeq ($(DESTINATION), flash)
 	$(MAKE) $(D)/hchs8100installer
 endif
@@ -775,7 +775,7 @@ enigma2_release_base:
 	$(SILENT)rm -rf $(RELEASE_DIR) || true
 	@echo -n "Copying image to release directory..."
 	$(SILENT)install -d $(RELEASE_DIR)
-	$(SILENT)install -d $(RELEASE_DIR)/{autofs,bin,boot,dev,dev.static,etc,lib,media,mnt,proc,ram,root,sbin,share,sys,tmp,usr,var}
+	$(SILENT)install -d $(RELEASE_DIR)/{autofs,bin,boot,dev,dev.static,etc,lib,media,mnt,proc,ram,root,sbin,share,sys,tmp,usr,var,home}
 	$(SILENT)install -d $(RELEASE_DIR)/autofs/{sda1,sda2,sda3,sda4,sdb1,sdb2,sdb3,sdb4,sdc1,sdc2,sdc3,sdc4,sdd1,sdd2,sdd3,sdd4}
 	$(SILENT)install -d $(RELEASE_DIR)/etc/{enigma2,init.d,network,mdev,tuxbox,tuxtxt}
 	$(SILENT)install -d $(RELEASE_DIR)/etc/network/if-{post-{up,down},pre-{up,down},up,down}.d
@@ -783,13 +783,13 @@ enigma2_release_base:
 	$(SILENT)install -d $(RELEASE_DIR)/media/{dvd,hdd,net}
 	$(SILENT)ln -sf /media/hdd $(RELEASE_DIR)/hdd
 	$(SILENT)install -d $(RELEASE_DIR)/mnt/{hdd,nfs,usb}
-	$(SILENT)install -d $(RELEASE_DIR)/usr/{bin,lib,local,sbin,share}
-	$(SILENT)install -d $(RELEASE_DIR)/usr/local/{bin,share}
-	$(SILENT)ln -sf /etc $(RELEASE_DIR)/usr/local/etc
-	$(SILENT)install -d $(RELEASE_DIR)/usr/local/share/{enigma2,keymaps}
-	$(SILENT)ln -s /usr/local/share/keymaps $(RELEASE_DIR)/usr/share/keymaps
+	$(SILENT)install -d $(RELEASE_DIR)/usr/{bin,lib,sbin,share}
+	$(SILENT)install -d $(RELEASE_DIR)/usr/{bin,share,keys,camscript,script,uninstall}
+	$(SILENT)ln -sf /etc $(RELEASE_DIR)/usr/etc
+	$(SILENT)install -d $(RELEASE_DIR)/usr/share/{enigma2,keymaps}
+	$(SILENT)ln -s /usr/share/keymaps $(RELEASE_DIR)/usr/share/keymaps
 	$(SILENT)install -d $(RELEASE_DIR)/usr/share/{fonts,udhcpc,zoneinfo}
-	$(SILENT)install -d $(RELEASE_DIR)/var/{etc,lib}
+	$(SILENT)install -d $(RELEASE_DIR)/var/{etc,lib,backups}
 	$(SILENT)install -d $(RELEASE_DIR)/var/lib/opkg
 	$(SILENT)ln -fs halt $(RELEASE_DIR)/sbin/reboot
 	$(SILENT)ln -fs halt $(RELEASE_DIR)/sbin/poweroff
@@ -820,7 +820,10 @@ enigma2_release_base:
 	$(SILENT)cp $(SKEL_ROOT)/usr/sbin/fw_printenv $(RELEASE_DIR)/usr/sbin/
 	$(SILENT)cp -aR $(TARGET_DIR)/etc/init.d/* $(RELEASE_DIR)/etc/init.d/
 	$(SILENT)cp -aR $(TARGET_DIR)/etc/* $(RELEASE_DIR)/etc/
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/boot/bootlogo.mvi $(RELEASE_DIR)/boot/
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/boot/bootlogo.mvi $(RELEASE_DIR)/usr/share/
+	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/boot/small.mp4 $(RELEASE_DIR)/usr/share/
+#	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/boot/firstboot.mvi $(RELEASE_DIR)/usr/share/
+#	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/boot/small.mp4 $(RELEASE_DIR)/usr/share/
 	$(SILENT)echo "720p50" > $(RELEASE_DIR)/etc/videomode
 	$(SILENT)echo "$(BOXTYPE)" > $(RELEASE_DIR)/etc/hostname
 	$(SILENT)date +%Y%m%d > $(RELEASE_DIR)/etc/version
@@ -948,28 +951,28 @@ endif
 # fonts
 #
 	$(SILENT)cp $(SKEL_ROOT)/root_enigma2/usr/share/fonts/* $(RELEASE_DIR)/usr/share/fonts/
-	$(SILENT)cp $(TARGET_DIR)/usr/local/share/fonts/* $(RELEASE_DIR)/usr/share/fonts/
+	$(SILENT)cp $(TARGET_DIR)/usr/share/fonts/* $(RELEASE_DIR)/usr/share/fonts/
 	$(SILENT)rm -f $(RELEASE_DIR)/usr/share/fonts/wqy-microhei.ttc
 	$(SILENT)rm -f $(RELEASE_DIR)/usr/share/fonts/fallback.font
-	$(SILENT)ln -s /usr/share/fonts $(RELEASE_DIR)/usr/local/share/fonts
+	$(SILENT)ln -s /usr/share/fonts $(RELEASE_DIR)/usr/share/fonts
 #
 # enigma2
 #
 	$(SILENT)if [ -e $(TARGET_DIR)/usr/bin/enigma2 ]; then \
-		cp -f $(TARGET_DIR)/usr/bin/enigma2 $(RELEASE_DIR)/usr/local/bin/enigma2; \
+		cp -f $(TARGET_DIR)/usr/bin/enigma2 $(RELEASE_DIR)/usr/bin/enigma2; \
 	fi
-	$(SILENT)if [ -e $(TARGET_DIR)/usr/local/bin/enigma2 ]; then \
-		cp -f $(TARGET_DIR)/usr/local/bin/enigma2 $(RELEASE_DIR)/usr/local/bin/enigma2; \
+	$(SILENT)if [ -e $(TARGET_DIR)/usr/bin/enigma2 ]; then \
+		cp -f $(TARGET_DIR)/usr/bin/enigma2 $(RELEASE_DIR)/usr/bin/enigma2; \
 	fi
-	$(SILENT)cp -a $(TARGET_DIR)/usr/local/share/enigma2/* $(RELEASE_DIR)/usr/local/share/enigma2
-	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/local/share/enigma2/skin_default/spinner/* $(RELEASE_DIR)/usr/local/share/enigma2/skin_default/spinner/
+	$(SILENT)cp -a $(TARGET_DIR)/usr/share/enigma2/* $(RELEASE_DIR)/usr/share/enigma2
+#	$(SILENT)cp -f $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/skin_default/spinner/* $(RELEASE_DIR)/usr/share/enigma2/skin_default/spinner/
 	$(SILENT)cp $(SKEL_ROOT)/root_enigma2/etc/enigma2/* $(RELEASE_DIR)/etc/enigma2
-	$(SILENT)ln -s /usr/local/share/enigma2 $(RELEASE_DIR)/usr/share/enigma2
+	$(SILENT)ln -s /usr/share/enigma2 $(RELEASE_DIR)/usr/share/enigma2
 	$(SILENT)ln -sf /etc/timezone.xml $(RELEASE_DIR)/etc/tuxbox/timezone.xml
 	$(SILENT)install -d $(RELEASE_DIR)/usr/lib/enigma2
 	$(SILENT)cp -a $(TARGET_DIR)/usr/lib/enigma2/* $(RELEASE_DIR)/usr/lib/enigma2/
-	$(SILENT)if test -d $(TARGET_DIR)/usr/local/lib/enigma2; then \
-		cp -a $(TARGET_DIR)/usr/local/lib/enigma2/* $(RELEASE_DIR)/usr/lib/enigma2; \
+	$(SILENT)if test -d $(TARGET_DIR)/usr/lib/enigma2; then \
+		cp -a $(TARGET_DIR)/usr/lib/enigma2/* $(RELEASE_DIR)/usr/lib/enigma2; \
 	fi
 	$(SILENT)if test -d $(RELEASE_DIR)/$(PYTHON_DIR)/site-packages/Extensions; then \
 		cp -rf $(RELEASE_DIR)/$(PYTHON_DIR)/site-packages/Extensions/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions; \
@@ -979,7 +982,31 @@ endif
 # copy root_enigma2
 #
 	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/etc/* $(RELEASE_DIR)/etc/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/home/* $(RELEASE_DIR)/home/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/etc/enigma2/weather_icons_special/* $(RELEASE_DIR)/etc/enigma2/weather_icons_special/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/var/* $(RELEASE_DIR)/var/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/bin/* $(RELEASE_DIR)/usr/bin/
 	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/* $(RELEASE_DIR)/usr/lib/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/etc/enigma2/skin_default/* $(RELEASE_DIR)/etc/enigma2/skin_default/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/camscript/* $(RELEASE_DIR)/usr/camscript/	
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/var/lib/opkg/info/* $(RELEASE_DIR)/var/lib/opkg/info/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/var/lib/opkg/status $(RELEASE_DIR)/var/lib/opkg/status
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/libcrypto.so.1.0.0 $(RELEASE_DIR)/usr/lib/libcrypto.so.1.0.0
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/libssl.so.1.0.0 $(RELEASE_DIR)/usr/lib/libssl.so.1.0.0
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/bin/* $(RELEASE_DIR)/usr/bin/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/bin/opkg $(RELEASE_DIR)/usr/bin/opkg	
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/script/* $(RELEASE_DIR)/usr/script/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/keys/* $(RELEASE_DIR)/usr/keys/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/uninstall/* $(RELEASE_DIR)/usr/uninstall/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/var/backups/* $(RELEASE_DIR)/var/backups/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/share/ca-certificates/* $(RELEASE_DIR)/usr/share/ca-certificates/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/* $(RELEASE_DIR)/usr/share/enigma2/	
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/share/* $(RELEASE_DIR)/usr/share/	
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/share/enigma2/menu.xml2 $(RELEASE_DIR)/usr/share/enigma2/menu.xml
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/enigma2/python/* $(RELEASE_DIR)/usr/lib/enigma2/python/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/python2.7/site-packages/* $(RELEASE_DIR)/usr/lib/python2.7/site-packages/
+#	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/enigma2/python/Components/* $(RELEASE_DIR)/usr/lib/enigma2/python/Components/
+	$(SILENT)cp -aR $(SKEL_ROOT)/root_enigma2/usr/lib/enigma2/python/Plugins/* $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/
 	$(SILENT)if [[ ! -d $(TARGET_DIR)/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif ]]; then \
 		rmdir --ignore-fail-on-non-empty $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/OpenWebif/; \
 	fi
@@ -1087,12 +1114,12 @@ endif
 	$(SILENT)rm -rf $(RELEASE_DIR)/lib/modules/$(KERNEL_VER)
 	$(SILENT)rm -rf $(RELEASE_DIR)/usr/lib/gcc
 	$(SILENT)rm -f $(RELEASE_DIR)/usr/lib/libc.so
-	$(SILENT)rm -f $(addprefix $(RELEASE_DIR)/usr/local/share/,skin_display_dm800se.xml skin_display_e4hd.xml skin_display_et10000.xml skin_display_et8500.xml skin_display_gbquad4k.xml skin_display_gbu4k.xml skin_display_hd2400.xml skin_display_vuduo2.xml skin_display_vuduo4k.xml skin_display_vusolo4k.xml skin_display_vuultimo4k.xml skin_display_vuuno4kse.xml skin_text_formuler1.xml)
-	$(SILENT)if [ -d $(RELEASE_DIR)/usr/local/share/hwinfo ]; then \
-		rm -rf $(RELEASE_DIR)/usr/local/share/hwinfo; \
+	$(SILENT)rm -f $(addprefix $(RELEASE_DIR)/usr/share/,skin_display_dm800se.xml skin_display_e4hd.xml skin_display_et10000.xml skin_display_et8500.xml skin_display_gbquad4k.xml skin_display_gbu4k.xml skin_display_hd2400.xml skin_display_vuduo2.xml skin_display_vuduo4k.xml skin_display_vusolo4k.xml skin_display_vuultimo4k.xml skin_display_vuuno4kse.xml skin_text_formuler1.xml)
+	$(SILENT)if [ -d $(RELEASE_DIR)/usr/share/hwinfo ]; then \
+		rm -rf $(RELEASE_DIR)/usr/share/hwinfo; \
 	fi
-	$(SILENT)if [ -d $(RELEASE_DIR)/usr/local/share/skin_default/LCDIcons ]; then \
-		rm -rf $(RELEASE_DIR)/usr/local/share/skin_default/LCDIcons; \
+	$(SILENT)if [ -d $(RELEASE_DIR)/usr/share/skin_default/LCDIcons ]; then \
+		rm -rf $(RELEASE_DIR)/usr/share/skin_default/LCDIcons; \
 	fi
 #
 # delete unnecessary files python
@@ -1161,36 +1188,36 @@ ifneq ($(BOXTYPE), $(filter $(BOXTYPE), cuberevo cuberevo_mini_fta cuberevo_250h
 	$(SILENT)rm -rf $(RELEASE_DIR)/usr/lib/enigma2/python/Plugins/Extensions/CuberevoVFD
 endif
 #
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_adb_box.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/adb_xmp.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_atemio520.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/atemio520.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_cuberevo.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/cuberevo.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_cuberevo_uni.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/cuberevo_uni.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_fs9000.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/fs9000.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hs9510.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hs9510.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hs7110.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hs7110.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_spark.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/spark.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_tf7700.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/tf7700.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs910.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/ufs910.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs912.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/ufs912.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs913.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/ufs913.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_vitamin.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/vitamin.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_pace7241.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/pace7241.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hl101_1.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hl101_1.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_vip_1.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/vip_1.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_opt9600.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/opt9600.png
-	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hchs8100.png $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hchs8100.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_adb_box.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/adb_xmp.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_atemio520.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/atemio520.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_cuberevo.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/cuberevo.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_cuberevo_uni.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/cuberevo_uni.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_fs9000.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/fs9000.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hs9510.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/hs9510.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hs7110.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/hs7110.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_spark.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/spark.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_tf7700.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/tf7700.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs910.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/ufs910.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs912.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/ufs912.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_ufs913.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/ufs913.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_vitamin.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/vitamin.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_pace7241.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/pace7241.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hl101_1.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/hl101_1.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_vip_1.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/vip_1.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_opt9600.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/opt9600.png
+	$(SILENT)cp -f $(SKEL_ROOT)/release/rc_hchs8100.png $(RELEASE_DIR)/usr/share/enigma2/rc_models/hchs8100.png
 # delete mips remote control files
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et4x00.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et6x00.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et7x00.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et8000.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et9x00.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/et9500.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/formuler1.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hd1100.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/hd2400.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/vu*.*
-	$(SILENT)rm -rf $(RELEASE_DIR)/usr/local/share/enigma2/rc_models/xp1000.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et4x00.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et6x00.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et7x00.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et8000.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et9x00.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/et9500.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/formuler1.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/hd1100.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/hd2400.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/vu*.*
+	$(SILENT)rm -rf $(RELEASE_DIR)/usr/share/enigma2/rc_models/xp1000.*
 #
 # delete unnecessary OpenWebif files
 #

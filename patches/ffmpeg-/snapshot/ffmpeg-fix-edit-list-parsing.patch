@@ -1,0 +1,13 @@
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -4313,8 +4313,10 @@
+ 
+             if (tts_data_old && tts_index_old < tts_count_old) {
+                 curr_ctts = tts_data_old[tts_index_old].offset;
++                /*
+                 av_log(mov->fc, AV_LOG_TRACE, "stts: %"PRId64" ctts: %"PRId64", tts_index: %"PRId64", tts_count: %"PRId64"\n",
+                        curr_cts, curr_ctts, tts_index_old, tts_count_old);
++                */
+                 curr_cts += curr_ctts;
+                 tts_sample_old++;
+                 if (tts_sample_old == tts_data_old[tts_index_old].count) {

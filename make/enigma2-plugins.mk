@@ -95,6 +95,8 @@ $(D)/enigma2_tuxtxt32bpp: $(D)/bootstrap $(D)/enigma2_tuxtxtlib
 # Plugins
 #
 E2_PLUGIN_DEPS  =
+E2_PLUGIN_DEPS += enigma2_servicemp3epl
+E2_PLUGIN_DEPS += enigma2_serviceapp
 ifneq ($(OPTIMIZATIONS), $(filter $(OPTIMIZATIONS), small))
 ifneq ($(BOXTYPE), $(filter $(BOXTYPE), adb_box))
 E2_PLUGIN_DEPS += $(D)/enigma2_openwebif
@@ -104,6 +106,7 @@ ifneq ($(E2_DIFF), 1)
 ifeq ($(MEDIAFW), $(filter $(MEDIAFW), eplayer3 gstreamer gst-eplayer3))
 #E2_PLUGIN_DEPS += enigma2_servicemp3
 E2_PLUGIN_DEPS += enigma2_servicemp3epl
+E2_PLUGIN_DEPS += enigma2_serviceapp
 endif
 ifeq ($(MEDIAFW), gst-eplayer3-dual)
 E2_PLUGIN_DEPS += enigma2_serviceapp
@@ -121,7 +124,7 @@ $(D)/enigma2-plugins: $(E2_PLUGIN_DEPS)
 #
 # enigma2-openwebif
 #
-OPENWEBIF_PATCH = build-enigma2/enigma2-openwebif.patch
+#OPENWEBIF_PATCH = build-enigma2/enigma2-openwebif.patch
 
 $(D)/enigma2_openwebif: $(D)/bootstrap $(D)/enigma2 $(D)/python_cheetah $(D)/python_ipaddress $(D)/python_pyopenssl
 	$(START_BUILD)
@@ -267,7 +270,7 @@ endif
 #
 # enigma2-networkbrowser
 #
-ENIGMA2_NETWORBROWSER_PATCH = build-enigma2/enigma2-networkbrowser-support-autofs.patch
+#ENIGMA2_NETWORBROWSER_PATCH = build-enigma2/enigma2-networkbrowser-support-autofs.patch
 
 $(D)/enigma2_networkbrowser: $(D)/bootstrap $(D)/enigma2
 	$(START_BUILD)
@@ -378,9 +381,9 @@ $(D)/enigma2_servicemp3: | $(SERVICEMP3_DEPS)
 #
 SERVICEMP3EPL_VER       = 0.1
 SERVICEMP3EPL_DEPS      = $(D)/bootstrap $(D)/enigma2
-
+SERVICEMP3EPL_DEPS      = $(D)/libsigc
 SERVICEMP3EPL_URL       = https://github.com/Audioniek/servicemp3epl.git
-SERVICEMP3EPL_BRANCH    = main
+#SERVICEMP3EPL_BRANCH    = master
 SERVICEMP3EPL_CPPFLAGS  = -std=c++11
 SERVICEMP3EPL_CPPFLAGS += -I$(TARGET_DIR)/usr/include/python$(PYTHON_VER_MAJOR)
 SERVICEMP3EPL_CPPFLAGS += -I$(SOURCE_DIR)/enigma2
@@ -389,7 +392,7 @@ SERVICEMP3EPL_CPPFLAGS += -I$(KERNEL_DIR)/include
 SERVICEMP3EPL_CPPFLAGS += -I$(APPS_DIR)/libeplayer3/include
 #SERVICEMP3EPL_PATCH     = build-enigma2/enigma2-servicemp3epl-$(SERVICEMP3EPL_VER).patch
 
-ifeq ($(MEDIAFW), eplayer3)
+ifeq ($(MEDIAFW), gstreamer)
 SERVICEMP3EPL_DEPS     += $(D)/tools-libeplayer3
 SERVICEMP3EPL_CONF     += --enable-libeplayer3
 endif
@@ -397,10 +400,12 @@ endif
 ifeq ($(MEDIAFW), gstreamer)
 SERVICEMP3EPL_DEPS     += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_dvbmediasink
 SERVICEMP3EPL_DEPS     += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
+SERVICEMP3EPL_CONF     += --enable-libeplayer3
 SERVICEMP3EPL_CONF     += --enable-gstreamer
+SERVICEMP3EPL_CONF     += --enable-dual_mediafw
 endif
 
-ifeq ($(MEDIAFW), gst-eplayer3)
+ifeq ($(MEDIAFW), gstreamer)
 SERVICEMP3EPL_DEPS     += $(D)/tools-libeplayer3
 SERVICEMP3EPL_DEPS     += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_dvbmediasink
 SERVICEMP3EPL_DEPS     += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
@@ -408,12 +413,12 @@ SERVICEMP3EPL_CONF     += --enable-libeplayer3
 SERVICEMP3EPL_CONF     += --enable-gstreamer
 endif
 
-ifeq ($(MEDIAFW), gst-eplayer3-dual)
-SERVICEMP3EPL_DEPS     += $(D)/tools-libeplayer3
-SERVICEMP3EPL_DEPS     += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_dvbmediasink
-SERVICEMP3EPL_DEPS     += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
-SERVICEMP3EPL_CONF     += --enable-dual_mediafw
-endif
+#ifeq ($(MEDIAFW), gst-eplayer3-dual)
+#SERVICEMP3EPL_DEPS     += $(D)/tools-libeplayer3
+#SERVICEMP3EPL_DEPS     += $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_multibox_dvbmediasink
+#SERVICEMP3EPL_DEPS     += $(D)/gst_plugins_good $(D)/gst_plugins_bad $(D)/gst_plugins_ugly
+#SERVICEMP3EPL_CONF     += --enable-dual_mediafw
+#endif
 
 $(D)/enigma2_servicemp3epl: | $(SERVICEMP3EPL_DEPS)
 	$(START_BUILD)
@@ -449,14 +454,14 @@ SERVICEAPP_CPPFLAGS += -I$(TARGET_DIR)/usr/include/python$(PYTHON_VER_MAJOR)
 SERVICEAPP_CPPFLAGS += -I$(SOURCE_DIR)/enigma2
 SERVICEAPP_CPPFLAGS += -I$(SOURCE_DIR)/enigma2/include
 SERVICEAPP_CPPFLAGS += -I$(KERNEL_DIR)/include
-SERVICEAPP_PATCH     = build-enigma2/enigma2-serviceapp-$(SERVICEAPP_VER).patch
+#SERVICEAPP_PATCH     = build-enigma2/enigma2-serviceapp-$(SERVICEAPP_VER).patch
 
 $(D)/enigma2_serviceapp: $(D)/bootstrap $(D)/enigma2 $(D)/enigma2_servicemp3epl $(D)/uchardet
 	$(START_BUILD)
 	$(REMOVE)/enigma2-serviceapp-$(SERVICEAPP_VER)
 	$(SILENT)if [ -d $(ARCHIVE)/enigma2-serviceapp-$(SERVICEAPP_VER).git ]; \
 		then cd $(ARCHIVE)/enigma2-serviceapp-$(SERVICEAPP_VER).git; git pull $(MINUS_Q); \
-		else cd $(ARCHIVE); git clone $(MINUS_Q) -b develop https://github.com/mx3L/serviceapp.git enigma2-serviceapp-$(SERVICEAPP_VER).git; \
+		else cd $(ARCHIVE); git clone $(MINUS_Q) -b develop https://github.com/ostende/serviceapp.git enigma2-serviceapp-$(SERVICEAPP_VER).git; \
 		fi
 	$(SILENT)cp -ra $(ARCHIVE)/enigma2-serviceapp-$(SERVICEAPP_VER).git/ $(BUILD_TMP)/enigma2-serviceapp-$(SERVICEAPP_VER)
 	$(SET) -e; cd $(BUILD_TMP)/enigma2-serviceapp-$(SERVICEAPP_VER); \

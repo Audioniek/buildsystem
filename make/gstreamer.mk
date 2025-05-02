@@ -1,7 +1,7 @@
 #
 # gstreamer
 #
-GSTREAMER_VER = 1.16.2
+GSTREAMER_VER = 1.16.3
 GSTREAMER_SOURCE = gstreamer-$(GSTREAMER_VER).tar.xz
 GSTREAMER_PATCH  = gstreamer-$(GSTREAMER_VER)-fix-crash-with-gst-inspect.patch
 GSTREAMER_PATCH += gstreamer-$(GSTREAMER_VER)-revert-use-new-gst-adapter-get-buffer.patch
@@ -487,7 +487,7 @@ $(D)/libdca: $(D)/bootstrap $(ARCHIVE)/$(LIBDCA_SOURCE)
 #
 GST_PLUGIN_SUBSINK_VER = 1.0
 GST_PLUGIN_SUBSINK_PATCH = gst-subsink.patch
-GST_PLUGIN_SUBSINK_URL = https://github.com/OpenPLi/gst-plugin-subsink
+GST_PLUGIN_SUBSINK_URL = https://github.com/mx3L/gst-plugin-subsink
 
 $(D)/gst_plugin_subsink: $(D)/bootstrap $(D)/gstreamer $(D)/gst_plugins_base
 	$(START_BUILD)

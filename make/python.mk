@@ -432,7 +432,7 @@ $(D)/python_pycparser: $(D)/bootstrap $(D)/python $(ARCHIVE)/$(PYTHON_PYCPARSER_
 #
 # python_cryptography
 #
-PYTHON_CRYPTOGRAPHY_VER = 3.3.1
+PYTHON_CRYPTOGRAPHY_VER = 2.9.1
 PYTHON_CRYPTOGRAPHY_SOURCE = cryptography-$(PYTHON_CRYPTOGRAPHY_VER).tar.gz
 
 $(ARCHIVE)/$(PYTHON_CRYPTOGRAPHY_SOURCE):
@@ -608,6 +608,106 @@ $(D)/python_mechanize: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHI
 	$(TOUCH)
 
 #
+# python_chardet
+#
+PYTHON_CHARDET_VER = 4.0.0
+PYTHON_CHARDET_SOURCE = chardet-$(PYTHON_CHARDET_VER).tar.gz
+
+$(ARCHIVE)/$(PYTHON_CHARDET_SOURCE):
+	$(WGET) https://pypi.python.org/packages/source/c/chardet/$(PYTHON_CHARDET_SOURCE)
+
+$(D)/python_chardet: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHIVE)/$(PYTHON_CHARDET_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/chardet-$(PYTHON_CHARDET_VER)
+	$(UNTAR)/$(PYTHON_CHARDET_SOURCE)
+	$(CH_DIR)/chardet-$(PYTHON_CHARDET_VER); \
+		$(PYTHON_BUILD); \
+		$(PYTHON_INSTALL)
+	$(REMOVE)/chardet-$(PYTHON_CHARDET_VER)
+	$(TOUCH)
+
+#
+# python_urllib3
+#
+PYTHON_URLLIB3_VER = 1.24.3
+PYTHON_URLLIB3_SOURCE = urllib3-$(PYTHON_URLLIB3_VER).tar.gz
+
+$(ARCHIVE)/$(PYTHON_URLLIB3_SOURCE):
+	$(WGET) https://pypi.python.org/packages/source/u/urllib3/$(PYTHON_URLLIB3_SOURCE)
+
+$(D)/python_urllib3: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHIVE)/$(PYTHON_URLLIB3_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/urllib3-$(PYTHON_URLLIB3_VER)
+	$(UNTAR)/$(PYTHON_URLLIB3_SOURCE)
+	$(CH_DIR)/urllib3-$(PYTHON_URLLIB3_VER); \
+		$(PYTHON_BUILD); \
+		$(PYTHON_INSTALL)
+	$(REMOVE)/urllib3-$(PYTHON_URLLIB3_VER)
+	$(TOUCH)
+
+#
+# python_certifi
+#
+PYTHON_CERTIFI_VER =2021.5.30
+PYTHON_CERTIFI_SOURCE = certifi-$(PYTHON_CERTIFI_VER).tar.gz
+
+$(ARCHIVE)/$(PYTHON_CERTIFI_SOURCE):
+	$(WGET) https://pypi.python.org/packages/source/c/certifi/$(PYTHON_CERTIFI_SOURCE)
+
+$(D)/python_certifi: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHIVE)/$(PYTHON_CERTIFI_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/certifi-$(PYTHON_CERTIFI_VER)
+	$(UNTAR)/$(PYTHON_CERTIFI_SOURCE)
+	$(CH_DIR)/certifi-$(PYTHON_CERTIFI_VER); \
+		$(PYTHON_BUILD); \
+		$(PYTHON_INSTALL)
+	$(REMOVE)/certifi-$(PYTHON_CERTIFI_VER)
+	$(TOUCH)
+
+
+
+
+#
+# python_execnet
+#
+PYTHON_EXECNET_VER =1.2.0
+PYTHON_EXECNET_SOURCE = execnet-$(PYTHON_EXECNET_VER).tar.gz
+
+$(ARCHIVE)/$(PYTHON_EXECNET_SOURCE):
+	$(WGET) https://pypi.python.org/packages/source/e/execnet/$(PYTHON_EXECNET_SOURCE)
+
+$(D)/python_execnet: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHIVE)/$(PYTHON_EXECNET_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/execnet-$(PYTHON_EXECNET_VER)
+	$(UNTAR)/$(PYTHON_EXECNET_SOURCE)
+	$(CH_DIR)/execnet-$(PYTHON_EXECNET_VER); \
+		$(PYTHON_BUILD); \
+		$(PYTHON_INSTALL)
+	$(REMOVE)/execnet-$(PYTHON_EXECNET_VER)
+	$(TOUCH)
+
+#
+# python-idna
+#
+PYTHON_IDNA_VER =2.10
+PYTHON_IDNA_SOURCE = idna-$(PYTHON_IDNA_VER).tar.gz
+
+$(ARCHIVE)/$(PYTHON_IDNA_SOURCE):
+	$(WGET) https://pypi.python.org/packages/source/i/idna/$(PYTHON_IDNA_SOURCE)
+
+$(D)/python_idna: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHIVE)/$(PYTHON_IDNA_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/idna-$(PYTHON_IDNA_VER)
+	$(UNTAR)/$(PYTHON_IDNA_SOURCE)
+	$(CH_DIR)/idna-$(PYTHON_IDNA_VER); \
+		$(PYTHON_BUILD); \
+		$(PYTHON_INSTALL)
+	$(REMOVE)/idna-$(PYTHON_IDNA_VER)
+	$(TOUCH)
+
+
+
+#
 # python_gdata
 #
 PYTHON_GDATA_VER = 2.0.18
@@ -756,30 +856,47 @@ $(D)/python_netifaces: $(D)/bootstrap $(D)/python $(D)/python_setuptools $(ARCHI
 	$(REMOVE)/netifaces-$(PYTHON_NETIFACES_VER)
 	$(TOUCH)
 
+# -----------------------------------------------------------------------------
+
 PYTHON_DEPS  = $(D)/host_python
 PYTHON_DEPS += $(D)/python
-PYTHON_DEPS += $(D)/python_twisted
-PYTHON_DEPS += $(D)/python_lxml
-PYTHON_DEPS += $(D)/python_service_identity
-PYTHON_DEPS += $(D)/python_netifaces
-PYTHON_DEPS += $(D)/python_six
-ifeq ($(IMAGE), $(filter $(IMAGE), enigma2-wlandriver))
-PYTHON_DEPS += $(D)/python_wifi
-endif
-ifneq ($(OPTIMIZATIONS), $(filter $(OPTIMIZATIONS), small))
-# TODO: are these necessary?
+PYTHON_DEPS += $(D)/python_setuptools
+PYTHON_DEPS += $(D)/libxmlccwrap
 PYTHON_DEPS += $(D)/python_elementtree
+PYTHON_DEPS += $(D)/python_lxml
+PYTHON_DEPS += $(D)/python_zope_interface
+PYTHON_DEPS += $(D)/python_netifaces
+PYTHON_DEPS += $(D)/python_pyopenssl
+PYTHON_DEPS += $(D)/python_twisted
+PYTHON_DEPS += $(D)/python_wifi
 PYTHON_DEPS += $(D)/python_imaging
 PYTHON_DEPS += $(D)/python_pyusb
 PYTHON_DEPS += $(D)/python_pycrypto
+PYTHON_DEPS += $(D)/python_pyasn1
 PYTHON_DEPS += $(D)/python_mechanize
+PYTHON_DEPS += $(D)/python_six
+PYTHON_DEPS += $(D)/python_cffi
+#PYTHON_DEPS += $(D)/python_sqlite3
+PYTHON_DEPS += $(D)/python_enum34
+PYTHON_DEPS += $(D)/python_pyasn1_modules
+PYTHON_DEPS += $(D)/python_pycparser
+#PYTHON_DEPS += $(D)/python_cryptography
+PYTHON_DEPS += $(D)/python_service_identity
+PYTHON_DEPS += $(D)/python_attrs
+PYTHON_DEPS += $(D)/python_cheetah
+PYTHON_DEPS += $(D)/python_gdata
 PYTHON_DEPS += $(D)/python_requests
 PYTHON_DEPS += $(D)/python_futures
 PYTHON_DEPS += $(D)/python_singledispatch
-#----
+PYTHON_DEPS += $(D)/python_ipaddress
 PYTHON_DEPS += $(D)/python_livestreamer
 PYTHON_DEPS += $(D)/python_livestreamersrv
-endif
+PYTHON_DEPS += $(D)/python_urllib3
+PYTHON_DEPS += $(D)/python_chardet
+PYTHON_DEPS += $(D)/python_certifi
+#PYTHON_DEPS += $(D)/python_cffi
+PYTHON_DEPS += $(D)/python_execnet
+PYTHON_DEPS += $(D)/python_idna
 
 python-all: $(PYTHON_DEPS)
 

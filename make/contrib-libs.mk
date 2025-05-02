@@ -337,29 +337,25 @@ $(D)/readline: $(D)/bootstrap $(ARCHIVE)/$(READLINE_SOURCE)
 #
 # openssl
 #
-ifeq ($(FFMPEG_VER), 2.8.18)
 OPENSSL_MAJOR = 1.0.2
 OPENSSL_MINOR = u
 OPENSSL_VER = $(OPENSSL_MAJOR)$(OPENSSL_MINOR)
+OPENSSL_SOURCE = openssl-$(OPENSSL_VER).tar.gz
 OPENSSL_PATCH  = openssl-$(OPENSSL_VER)-optimize-for-size.patch
 OPENSSL_PATCH += openssl-$(OPENSSL_VER)-makefile-dirs.patch
 OPENSSL_PATCH += openssl-$(OPENSSL_VER)-disable_doc_tests.patch
 OPENSSL_PATCH += openssl-$(OPENSSL_VER)-fix-parallel-building.patch
 OPENSSL_PATCH += openssl-$(OPENSSL_VER)-compat_versioned_symbols-1.patch
 OPENSSL_PATCH += openssl-$(OPENSSL_VER)-remove_timestamp_check.patch
-OPENSSL_TARGETDIR =
-else
-OPENSSL_MAJOR = 1.1.1
-OPENSSL_MINOR = j
-OPENSSL_VER = $(OPENSSL_MAJOR)$(OPENSSL_MINOR)
-OPENSSL_PATCH += openssl-$(OPENSSL_VER)-compat_versioned_symbols-1.patch
-OPENSSL_TARGETDIR = $(TARGET_DIR)
-endif
-OPENSSL_SOURCE = openssl-$(OPENSSL_VER).tar.gz
+
+ifeq ($(BOXARCH), sh4)
 OPENSSL_SED_PATCH = sed -i 's|MAKEDEPPROG=makedepend|MAKEDEPPROG=$(CROSS_DIR)/bin/$$(CC) -M|' Makefile
+else
+OPENSSL_SED_PATCH = sed -i 's|MAKEDEPPROG=makedepend|MAKEDEPPROG=$(CROSS_BASE)/bin/$$(CC) -M|' Makefile
+endif
 
 $(ARCHIVE)/$(OPENSSL_SOURCE):
-	$(WGET) https://www.openssl.org/source/$(OPENSSL_SOURCE)
+	$(DOWNLOAD) https://www.openssl.org/source/old/$(OPENSSL_MAJOR)/$(OPENSSL_SOURCE)
 
 $(D)/openssl: $(D)/bootstrap $(ARCHIVE)/$(OPENSSL_SOURCE)
 	$(START_BUILD)
@@ -373,25 +369,20 @@ $(D)/openssl: $(D)/bootstrap $(ARCHIVE)/$(OPENSSL_SOURCE)
 			shared \
 			no-hw \
 			linux-generic32 \
-			--prefix=$(OPENSSL_TARGETDIR)/usr \
-			--openssldir=$(OPENSSL_TARGETDIR)/etc/ssl \
+			--prefix=/usr \
+			--openssldir=/etc/ssl \
 		; \
 		$(OPENSSL_SED_PATCH); \
 		$(MAKE) depend; \
 		$(MAKE) all; \
 		$(MAKE) install_sw INSTALL_PREFIX=$(TARGET_DIR)
-	chmod 0755 $(TARGET_DIR)/usr/lib/lib{crypto,ssl}.so.*
+	chmod 0755 $(TARGET_LIB_DIR)/lib{crypto,ssl}.so.*
 	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/openssl.pc
 	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/libcrypto.pc
 	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/libssl.pc
-	cd $(TARGET_DIR) && rm -rf etc/ssl/man usr/bin/openssl usr/lib/engines-1.1
-ifeq ($(OPENSSL_MAJOR), 1.0.2)
-	ln -sf libcrypto.so.1.0.0 $(TARGET_DIR)/usr/lib/libcrypto.so.0.9.8
-	ln -sf libssl.so.1.0.0 $(TARGET_DIR)/usr/lib/libssl.so.0.9.8
-else
-	ln -sf libcrypto.so.1.1 $(TARGET_DIR)/usr/lib/libcrypto.so.0.9.8
-	ln -sf libssl.so.1.1 $(TARGET_DIR)/usr/lib/libssl.so.0.9.8
-endif
+	cd $(TARGET_DIR) && rm -rf etc/ssl/man usr/bin/openssl usr/lib/engines
+	ln -sf libcrypto.so.1.0.0 $(TARGET_LIB_DIR)/libcrypto.so.0.9.8
+	ln -sf libssl.so.1.0.0 $(TARGET_LIB_DIR)/libssl.so.0.9.8
 	$(REMOVE)/openssl-$(OPENSSL_VER)
 	$(TOUCH)
 
@@ -614,7 +605,7 @@ $(D)/boost: $(D)/bootstrap $(ARCHIVE)/$(BOOST_SOURCE)
 #
 # zlib
 #
-ZLIB_VER = 1.3
+ZLIB_VER = 1.3.1
 ZLIB_SOURCE = zlib-$(ZLIB_VER).tar.xz
 ZLIB_Patch = zlib-$(ZLIB_VER).patch
 
@@ -917,10 +908,10 @@ $(D)/libjpeg_turbo: $(D)/bootstrap $(ARCHIVE)/$(LIBJPEG_TURBO_SOURCE)
 #
 # libpng
 #
-LIBPNG_VER = 1.6.40
+LIBPNG_VER = 1.6.47
 LIBPNG_VER_X = 16
 LIBPNG_SOURCE = libpng-$(LIBPNG_VER).tar.xz
-LIBPNG_PATCH = libpng-$(LIBPNG_VER)-disable-tools.patch
+#LIBPNG_PATCH = libpng-$(LIBPNG_VER)-disable-tools.patch
 
 $(ARCHIVE)/$(LIBPNG_SOURCE):
 	$(WGET) https://sourceforge.net/projects/libpng/files/libpng$(LIBPNG_VER_X)/$(LIBPNG_VER)/$(LIBPNG_SOURCE) || \
@@ -1034,7 +1025,7 @@ $(D)/ca-bundle: $(ARCHIVE)/cacert.pem
 #
 # libcurl
 #
-LIBCURL_VER = 8.4.0
+LIBCURL_VER = 8.12.1
 LIBCURL_SOURCE = curl-$(LIBCURL_VER).tar.bz2
 LIBCURL_PATCH = libcurl-$(LIBCURL_VER).patch
 
@@ -1088,7 +1079,7 @@ $(D)/libcurl: $(D)/bootstrap $(D)/zlib $(D)/openssl $(D)/ca-bundle $(ARCHIVE)/$(
 #
 # libfribidi
 #
-LIBFRIBIDI_VER = 1.0.12
+LIBFRIBIDI_VER = 1.0.16
 LIBFRIBIDI_SOURCE = fribidi-$(LIBFRIBIDI_VER).tar.xz
 LIBFRIBIDI_PATCH = libfribidi-$(LIBFRIBIDI_VER).patch
 
@@ -1318,7 +1309,7 @@ $(D)/libvorbisidec: $(D)/bootstrap $(D)/libogg $(ARCHIVE)/$(LIBVORBISIDEC_SOURCE
 #
 # libiconv
 #
-LIBICONV_VER = 1.15
+LIBICONV_VER = 1.18
 LIBICONV_SOURCE = libiconv-$(LIBICONV_VER).tar.gz
 
 $(ARCHIVE)/$(LIBICONV_SOURCE):
@@ -1349,7 +1340,7 @@ $(D)/libiconv: $(D)/bootstrap $(ARCHIVE)/$(LIBICONV_SOURCE)
 #
 # expat
 #
-EXPAT_VER = 2.5.0
+EXPAT_VER = 2.7.1
 EXPAT_SOURCE = expat-$(EXPAT_VER).tar.bz2
 EXPAT_PATCH  = expat-$(EXPAT_VER)-libtool-tag.patch
 
@@ -1720,8 +1711,8 @@ $(D)/flac: $(D)/bootstrap $(ARCHIVE)/$(FLAC_SOURCE)
 #
 # libxml2
 #
-LIBXML2_MAJOR = 2.11
-LIBXML2_MINOR = 5
+LIBXML2_MAJOR = 2.12
+LIBXML2_MINOR = 10
 LIBXML2_VER = $(LIBXML2_MAJOR).$(LIBXML2_MINOR)
 LIBXML2_SOURCE = libxml2-$(LIBXML2_VER).tar.xz
 LIBXML2_PATCH = libxml2-$(LIBXML2_VER).patch
@@ -1825,6 +1816,7 @@ $(D)/libxslt: $(D)/bootstrap $(D)/libxml2 $(ARCHIVE)/$(LIBXSLT_SOURCE)
 	$(REMOVE)/libxslt-$(LIBXSLT_VER)
 	$(TOUCH)
 
+
 #
 # libpopt
 #
@@ -1881,7 +1873,7 @@ $(D)/libroxml: $(D)/bootstrap $(ARCHIVE)/$(LIBROXML_SOURCE)
 #
 # pugixml
 #
-PUGIXML_VER = 1a9a41b
+PUGIXML_VER = caade5a
 PUGIXML_URL = https://github.com/zeux/pugixml.git
 PUGIXML_PATCH = pugixml-$(PUGIXML_VER)-config.patch
 
@@ -2095,12 +2087,13 @@ $(D)/libusb_compat: $(D)/bootstrap $(D)/libusb $(ARCHIVE)/$(LIBUSB_COMPAT_SOURCE
 #
 # alsa-lib
 #
-ALSA_LIB_VER = 1.2.9
+ALSA_LIB_VER = 1.2.13
 ALSA_LIB_SOURCE = alsa-lib-$(ALSA_LIB_VER).tar.bz2
 ALSA_LIB_PATCH  = alsa-lib-$(ALSA_LIB_VER).patch
 ALSA_LIB_PATCH += alsa-lib-$(ALSA_LIB_VER)-link_fix.patch
 ALSA_LIB_PATCH += alsa-lib-$(ALSA_LIB_VER)-header.patch
 ALSA_LIB_PATCH += alsa-lib-$(ALSA_LIB_VER)-sh4_kernel_long_t-fix.patch
+
 
 $(ARCHIVE)/$(ALSA_LIB_SOURCE):
 	$(WGET) https://www.alsa-project.org/files/pub/lib/$(ALSA_LIB_SOURCE)
@@ -2125,6 +2118,7 @@ $(D)/alsa_lib: $(D)/bootstrap $(ARCHIVE)/$(ALSA_LIB_SOURCE)
 			--disable-resmgr \
 			--disable-old-symbols \
 			--disable-alisp \
+			--disable-ucm \
 			--disable-hwdep \
 			--disable-python \
 			--disable-topology \
@@ -2139,7 +2133,7 @@ $(D)/alsa_lib: $(D)/bootstrap $(ARCHIVE)/$(ALSA_LIB_SOURCE)
 #
 # alsa-utils
 #
-ALSA_UTILS_VER = 1.2.9
+ALSA_UTILS_VER = 1.2.13
 ALSA_UTILS_SOURCE = alsa-utils-$(ALSA_UTILS_VER).tar.bz2
 ALSA_UTILS_PATCH  = alsa-utils-$(ALSA_UTILS_VER).patch
 
@@ -3006,4 +3000,158 @@ $(D)/libxmlccwrap: $(D)/bootstrap $(D)/libxml2 $(D)/libxslt $(ARCHIVE)/$(LIBXMLC
 	$(REWRITE_LIBTOOL)/libxmlccwrap.la
 	$(REMOVE)/libxmlccwrap-$(LIBXMLCCWRAP_VER)
 	$(TOUCH)
+
+#
+
+# libsigc++_e2
+#
+LIBSIGCPP_E2_MAJOR = 1
+LIBSIGCPP_E2_MINOR = 2
+LIBSIGCPP_E2_MICRO = 7
+LIBSIGCPP_E2_VER=$(LIBSIGCPP_E2_MAJOR).$(LIBSIGCPP_E2_MINOR).$(LIBSIGCPP_E2_MICRO)
+
+$(ARCHIVE)/libsigc++-$(LIBSIGCPP_E2_VER).tar.gz:
+	$(WGET) https://ftp.gnome.org/pub/GNOME/sources/libsigc++/$(LIBSIGCPP_E2_MAJOR).$(LIBSIGCPP_E2_MINOR)/libsigc++-$(LIBSIGCPP_E2_VER).tar.gz
+
+$(D)/libsigc_e2: $(D)/bootstrap $(ARCHIVE)/libsigc++-$(LIBSIGCPP_E2_VER).tar.gz
+	$(START_BUILD)
+	$(UNTAR)/libsigc++-$(LIBSIGCPP_E2_VER).tar.gz
+	$(CH_DIR)/libsigc++-$(LIBSIGCPP_E2_VER); \
+		$(CONFIGURE) \
+			--prefix=/usr \
+			--disable-checks \
+		; \
+		$(MAKE) all; \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/sigc++-1.2.pc
+	$(REWRITE_LIBTOOL)/libsigc-1.2.la
+	$(REMOVE)/libsigc++-$(LIBSIGCPP_E2_VER)
+	$(TOUCH)
+	
+#
+# harfbuzz
+#
+HARFBUZZ_VER = 1.8.8
+HARFBUZZ_SOURCE = harfbuzz-$(HARFBUZZ_VER).tar.bz2
+
+$(ARCHIVE)/$(HARFBUZZ_SOURCE):
+	$(DOWNLOAD) https://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SOURCE)
+
+$(D)/harfbuzz: $(D)/bootstrap $(D)/freetype $(D)/libglib2 $(ARCHIVE)/$(HARFBUZZ_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/harfbuzz-$(HARFBUZZ_VER)
+	$(UNTAR)/$(HARFBUZZ_SOURCE)
+	$(CH_DIR)/harfbuzz-$(HARFBUZZ_VER); \
+		$(CONFIGURE) \
+			--prefix=/usr \
+			--infodir=/.remove \
+			--localedir=/.remove \
+			--mandir=/.remove \
+			--docdir=/.remove \
+			--htmldir=/.remove \
+			--dvidir=/.remove \
+			--pdfdir=/.remove \
+			--psdir=/.remove \
+			--with-freetype \
+			--with-glib \
+			--without-cairo \
+			--without-fontconfig \
+			--without-graphite2 \
+			--without-icu \
+		; \
+		$(MAKE) all; \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+		if [ -d $(TARGET_INCLUDE_DIR)/harfbuzz ]; then \
+			cp $(TARGET_INCLUDE_DIR)/harfbuzz/* $(TARGET_INCLUDE_DIR)/glib-2.0; \
+		fi;
+	$(REWRITE_LIBTOOL)/libharfbuzz.la
+	$(REWRITE_LIBTOOL)/libharfbuzz-subset.la
+	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/harfbuzz.pc
+	$(REWRITE_PKGCONF) $(PKG_CONFIG_PATH)/harfbuzz-subset.pc
+	$(REMOVE)/harfbuzz-$(HARFBUZZ_VER)
+	$(TOUCH)
+
+
+#
+# dvb-apps
+#
+DVB_APPS_PATCH = dvb-apps.patch
+
+$(D)/dvb-apps: $(D)/bootstrap $(ARCHIVE)/$(DVB_APPS_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/dvb-apps
+	set -e; if [ -d $(ARCHIVE)/dvb-apps.git ]; \
+		then cd $(ARCHIVE)/dvb-apps.git; git pull; \
+		else cd $(ARCHIVE); git clone https://github.com/openpli-arm/dvb-apps.git dvb-apps.git; \
+		fi
+	cp -ra $(ARCHIVE)/dvb-apps.git $(BUILD_TMP)/dvb-apps
+	$(CH_DIR)/dvb-apps; \
+		$(call apply_patches,$(DVB_APPS_PATCH)); \
+		$(BUILDENV) \
+		$(BUILDENV) $(MAKE) DESTDIR=$(TARGET_DIR); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(REMOVE)/dvb-apps
+	$(TOUCH)
+
+
+#
+# libgpg-error
+#
+LIBGPG_ERROR_VER    = 1.45
+LIBGPG_ERROR_DIR    = libgpg-error-$(LIBGPG_ERROR_VER)
+LIBGPG_ERROR_SOURCE = libgpg-error-$(LIBGPG_ERROR_VER).tar.bz2
+LIBGPG_ERROR_URL    = https://www.gnupg.org/ftp/gcrypt/libgpg-error
+
+$(ARCHIVE)/$(LIBGPG_ERROR_SOURCE):
+	$(WGET) $(LIBGPG_ERROR_URL)/$(LIBGPG_ERROR_SOURCE)
+
+$(D)/libgpg-error: $(D)/bootstrap $(ARCHIVE)/$(LIBGPG_ERROR_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/$(LIBGPG_ERROR_DIR)
+	$(UNTAR)/$(LIBGPG_ERROR_SOURCE)
+	$(CH_DIR)/$(LIBGPG_ERROR_DIR); \
+		$(CONFIGURE) \
+			--prefix=/usr \
+			--mandir=/.remove \
+			--infodir=/.remove \
+			--datarootdir=/.remove \
+			--disable-tests \
+			; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(REWRITE_LIBTOOL)/libgpg-error.la
+	$(REMOVE)/$(LIBGPG_ERROR_DIR)
+	$(TOUCH)
+
+#
+# libgcrypt
+#
+LIBGCRYPT_VER    = 1.8.10
+LIBGCRYPT_DIR    = libgcrypt-$(LIBGCRYPT_VER)
+LIBGCRYPT_SOURCE = libgcrypt-$(LIBGCRYPT_VER).tar.bz2
+LIBGCRYPT_URL    = https://gnupg.org/ftp/gcrypt/libgcrypt
+
+$(ARCHIVE)/$(LIBGCRYPT_SOURCE):
+	$(WGET) $(LIBGCRYPT_URL)/$(LIBGCRYPT_SOURCE)
+
+$(D)/libgcrypt: $(D)/bootstrap $(D)/libgpg-error $(ARCHIVE)/$(LIBGCRYPT_SOURCE)
+	$(START_BUILD)
+	$(REMOVE)/$(LIBGCRYPT_DIR)
+	$(UNTAR)/$(LIBGCRYPT_SOURCE)
+	$(CH_DIR)/$(LIBGCRYPT_DIR); \
+		$(CONFIGURE) \
+			--prefix=/usr \
+			--disable-tests \
+			--with-gpg-error-prefix=$(TARGET_DIR)/usr \
+			--mandir=/.remove \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	mv $(TARGET_DIR)/usr/bin/libgcrypt-config $(HOST_DIR)/bin
+	$(REWRITE_LIBTOOL)/libgcrypt.la
+	$(REMOVE)/$(LIBGCRYPT_DIR)
+	$(TOUCH)
+
+
+
 

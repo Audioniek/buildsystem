@@ -1,0 +1,2775 @@
+From a311102d78840d25474d0158db478862bef5ae59 Mon Sep 17 00:00:00 2001
+From: Jacek Jendrzej <crashdvb@googlemail.com>
+Date: Thu, 23 Apr 2015 19:57:16 +0200
+Subject: [PATCH 1/4] add HDS ro
+
+Signed-off-by: Jacek Jendrzej <crashdvb@googlemail.com>
+---
+ configure                 |    5 +
+ libavformat/Makefile      |    1 +
+ libavformat/allformats.c  |    2 +-
+ libavformat/amfmetadata.c |  290 +++++++++++++
+ libavformat/amfmetadata.h |   47 ++
+ libavformat/f4fbox.c      |  345 +++++++++++++++
+ libavformat/f4fbox.h      |  110 +++++
+ libavformat/f4mmanifest.c |  256 +++++++++++
+ libavformat/f4mmanifest.h |   65 +++
+ libavformat/flv.h         |    2 +
+ libavformat/flvdec.c      |    5 +
+ libavformat/flvtag.c      |  408 ++++++++++++++++++
+ libavformat/flvtag.h      |   40 ++
+ libavformat/hdsdec.c      | 1036 +++++++++++++++++++++++++++++++++++++++++++++
+ 14 files changed, 2611 insertions(+), 1 deletion(-)
+ create mode 100644 libavformat/amfmetadata.c
+ create mode 100644 libavformat/amfmetadata.h
+ create mode 100644 libavformat/f4fbox.c
+ create mode 100644 libavformat/f4fbox.h
+ create mode 100644 libavformat/f4mmanifest.c
+ create mode 100644 libavformat/f4mmanifest.h
+ create mode 100644 libavformat/flvtag.c
+ create mode 100644 libavformat/flvtag.h
+ create mode 100644 libavformat/hdsdec.c
+
+diff --git a/configure b/configure
+index 2eada0e..30f75e0 100755
+--- a/configure
++++ b/configure
+@@ -284,6 +284,7 @@
+   --enable-x11grab         enable X11 grabbing (legacy) [no]
+   --disable-xlib           disable xlib [autodetect]
+   --disable-zlib           disable zlib [autodetect]
++  --disable-libroxml       disable XML parsing using the C library libroxml [autodetect]
+ 
+ Toolchain options:
+   --arch=ARCH              select architecture [$arch]
+@@ -1395,6 +1396,7 @@
+     libopus
+     libpulse
+     libquvi
++    libroxml
+     librtmp
+     libschroedinger
+     libshine
+@@ -2580,6 +2582,7 @@
+ eac3_demuxer_select="ac3_parser"
+ f4v_muxer_select="mov_muxer"
+ flac_demuxer_select="flac_parser"
++hds_demuxer_select="libroxml"
+ hds_muxer_select="flv_muxer"
+ hls_muxer_select="mpegts_muxer"
+ image2_alias_pix_demuxer_select="image2_demuxer"
+@@ -5193,6 +5196,8 @@
+ disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+ disabled  lzma || check_lib2  lzma.h lzma_version_number -llzma || disable lzma
+ 
++disabled libroxml || check_lib roxml.h roxml_load_buf -lroxml || disable libroxml
++
+ check_lib math.h sin -lm && LIBM="-lm"
+ disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
+ 
+diff --git a/libavformat/Makefile b/libavformat/Makefile
+index bca9d5b..e8334c0 100644
+--- a/libavformat/Makefile
++++ b/libavformat/Makefile
+@@ -183,6 +183,7 @@ OBJS-$(CONFIG_H263_DEMUXER)              += h263dec.o rawdec.o
+ OBJS-$(CONFIG_H263_MUXER)                += rawenc.o
+ OBJS-$(CONFIG_H264_DEMUXER)              += h264dec.o rawdec.o
+ OBJS-$(CONFIG_H264_MUXER)                += rawenc.o
++OBJS-$(CONFIG_HDS_DEMUXER)               += hdsdec.o amfmetadata.o f4mmanifest.o f4fbox.o flvtag.o
+ OBJS-$(CONFIG_HDS_MUXER)                 += hdsenc.o
+ OBJS-$(CONFIG_HEVC_DEMUXER)              += hevcdec.o rawdec.o
+ OBJS-$(CONFIG_HEVC_MUXER)                += rawenc.o
+diff --git a/libavformat/allformats.c b/libavformat/allformats.c
+index 0f53d4c..06652e5 100644
+--- a/libavformat/allformats.c
++++ b/libavformat/allformats.c
+@@ -143,7 +143,7 @@ void av_register_all(void)
+     REGISTER_MUXDEMUX(H261,             h261);
+     REGISTER_MUXDEMUX(H263,             h263);
+     REGISTER_MUXDEMUX(H264,             h264);
+-    REGISTER_MUXER   (HDS,              hds);
++    REGISTER_MUXDEMUX(HDS,              hds);
+     REGISTER_MUXDEMUX(HEVC,             hevc);
+     REGISTER_MUXDEMUX(HLS,              hls);
+     REGISTER_DEMUXER (HNM,              hnm);
+diff --git a/libavformat/amfmetadata.c b/libavformat/amfmetadata.c
+new file mode 100644
+index 0000000..f2fe7ca
+--- /dev/null
++++ b/libavformat/amfmetadata.c
+@@ -0,0 +1,290 @@
++/*
++ * Adobe Action Message Format Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Action Message Format Parser
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ * @see http://www.adobe.com/content/dam/Adobe/en/devnet/amf/pdf/amf-file-format-spec.pdf
++ */
++
++#include "amfmetadata.h"
++#include "avio_internal.h"
++#include "flv.h"
++#include "libavutil/avstring.h"
++#include "libavutil/intfloat.h"
++#include "libavformat/avformat.h"
++
++static int amf_metadata_parse_value(AVIOContext *in, AMFMetadata *metadata, const char *name);
++
++static int amf_metadata_read_string_value(AVIOContext *in, char *str, int str_size)
++{
++    uint8_t type;
++
++    type = avio_r8(in);
++    if(type != 0x02) {
++	av_log(NULL, AV_LOG_ERROR, "amfmetadata Expected type 2, type = %d \n", type);
++	return -1;
++    }
++
++    return flv_amf_get_string(in, str, str_size);
++}
++
++static void amf_metadata_assign_property_number(AMFMetadata *metadata,
++    const char *name, double value)
++{
++    if(!av_strcasecmp("width", name)) {
++	metadata->width = (int)value;
++    }
++    else
++    if(!av_strcasecmp("height", name)) {
++	metadata->height = (int)value;
++    }
++    else
++    if(!av_strcasecmp("framerate", name)) {
++	metadata->frame_rate = (int)value;
++    }
++    else
++    if(!av_strcasecmp("videodatarate", name)) {
++	metadata->video_data_rate = (int)value;
++    }
++    else
++    if(!av_strcasecmp("audiosamplerate", name)) {
++	metadata->audio_sample_rate = (int)value;
++    }
++    else
++    if(!av_strcasecmp("audiosamplesize", name)) {
++	metadata->audio_sample_size = (int)value;
++    }
++    else
++    if(!av_strcasecmp("audiochannels", name)) {
++	metadata->nb_audio_channels = (int)value;
++    }
++    else
++    if(!av_strcasecmp("stereo", name)) {
++	metadata->nb_audio_channels = ((int)value) ? 2 : 1;
++    }
++    else
++    if(!av_strcasecmp("audiodatarate", name)) {
++	metadata->audio_data_rate = (int)value;
++    }
++    else
++    if(!av_strcasecmp("audiocodecid", name)) {
++	switch(FLV_AUDIO_CODECID_MASK & ((int)value << FLV_AUDIO_CODECID_OFFSET)) {
++	case FLV_CODECID_PCM:
++	    metadata->audio_codec_id = metadata->audio_sample_size == 8
++				       ? AV_CODEC_ID_PCM_U8
++#if HAVE_BIGENDIAN
++				       : AV_CODEC_ID_PCM_S16BE;
++#else
++				       : AV_CODEC_ID_PCM_S16LE;
++#endif
++	    break;
++	case FLV_CODECID_ADPCM:
++	    metadata->audio_codec_id = AV_CODEC_ID_ADPCM_SWF;
++	    break;
++	case FLV_CODECID_MP3:
++	    metadata->audio_stream_need_parsing = AVSTREAM_PARSE_FULL;
++	    metadata->audio_codec_id = AV_CODEC_ID_MP3;
++	    break;
++	case FLV_CODECID_PCM_LE:
++	    metadata->audio_codec_id = metadata->audio_sample_size == 8
++				       ? AV_CODEC_ID_PCM_U8
++				       : AV_CODEC_ID_PCM_S16LE;
++	    break;
++	case FLV_CODECID_NELLYMOSER_16KHZ_MONO:
++	    if (!metadata->audio_sample_rate)
++		metadata->audio_sample_rate = 16000;
++	    metadata->nb_audio_channels = 1;
++	    metadata->audio_codec_id = AV_CODEC_ID_NELLYMOSER;
++	    break;
++	case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
++	    if (!metadata->audio_sample_rate)
++		metadata->audio_sample_rate = 8000;
++	    metadata->nb_audio_channels = 1;
++	    metadata->audio_codec_id = AV_CODEC_ID_NELLYMOSER;
++	    break;
++	case FLV_CODECID_NELLYMOSER:
++	    metadata->audio_codec_id = AV_CODEC_ID_NELLYMOSER;
++	    break;
++	case FLV_CODECID_PCM_ALAW:
++	    metadata->audio_sample_rate = 8000;
++	    metadata->audio_codec_id = AV_CODEC_ID_PCM_ALAW;
++	    break;
++	case FLV_CODECID_PCM_MULAW:
++	    metadata->audio_sample_rate = 8000;
++	    metadata->audio_codec_id = AV_CODEC_ID_PCM_MULAW;
++	    break;
++	case FLV_CODECID_AAC:
++	    metadata->audio_codec_id = AV_CODEC_ID_AAC;
++	    break;
++	case FLV_CODECID_SPEEX:
++	    metadata->audio_sample_rate = 16000;
++	    metadata->audio_codec_id = AV_CODEC_ID_SPEEX;
++	    break;
++	default:
++	    break;
++	}
++    }
++    else
++    if(!av_strcasecmp("videocodecid", name)) {
++	if((int)value == 7)
++	    metadata->video_codec_id = AV_CODEC_ID_H264;
++    }
++}
++
++static void amf_metadata_assign_property_string(AMFMetadata *metadata,
++    const char *name, const char *value)
++{
++    if(!av_strcasecmp("audiocodecid", name)) {
++	if(!av_strcasecmp("mp4a", value))
++	    metadata->audio_codec_id = AV_CODEC_ID_AAC;
++	else if(!av_strcasecmp(".mp3", value)) {
++	    metadata->audio_stream_need_parsing = AVSTREAM_PARSE_FULL;
++	    metadata->audio_codec_id = AV_CODEC_ID_MP3;
++	}
++	else
++	    av_log(NULL, AV_LOG_ERROR, "amfmetadata audiocodecid=%s unhandled\n", value);
++    }
++    else
++    if(!av_strcasecmp("videocodecid", name)) {
++	if(!av_strcasecmp("avc1", value))
++	    metadata->video_codec_id = AV_CODEC_ID_H264;
++	else
++	    av_log(NULL, AV_LOG_ERROR, "amfmetadata videocodecid=%s unhandled\n", value);
++    }
++}
++
++static int amf_metadata_parse_object_property(AVIOContext *in, AMFMetadata *metadata)
++{
++    char name[INT16_MAX];
++    int ret;
++
++    if((ret = flv_amf_get_string(in, name, sizeof(name))) < 0)
++	return ret;
++
++    return amf_metadata_parse_value(in, metadata, name);
++}
++
++static int amf_metadata_parse_object(AVIOContext *in, AMFMetadata *metadata)
++{
++    int ret;
++
++    while(!url_feof(in))
++	if((ret = amf_metadata_parse_object_property(in, metadata)) < 0)
++	    break;
++
++    return 0;
++}
++
++static int amf_metadata_parse_strict_array(AVIOContext *in, AMFMetadata *metadata)
++{
++    int length;
++    int ret;
++
++    length = avio_rb32(in);
++    while(!url_feof(in) && length > 0) {
++	if((ret = amf_metadata_parse_value(in, metadata, NULL)) < 0)
++	    return ret;
++	length--;
++    }
++
++    return 0;
++}
++
++static int amf_metadata_parse_value(AVIOContext *in, AMFMetadata *metadata, const char *name)
++{
++    uint8_t type;
++    char value_str[INT16_MAX];
++    double value_number;
++    int ret = 0;
++
++    type = avio_r8(in);
++
++    if(type == AMF_DATA_TYPE_NUMBER) {
++	value_number = av_int2double(avio_rb64(in));
++	amf_metadata_assign_property_number(metadata, name, value_number);
++    }
++    else if(type == AMF_DATA_TYPE_BOOL) {
++	value_number = avio_r8(in);
++	amf_metadata_assign_property_number(metadata, name, value_number);
++    }
++    else if(type == AMF_DATA_TYPE_STRING) {
++	if((ret = flv_amf_get_string(in, value_str, sizeof(value_str))) < 0)
++	    return ret;
++	amf_metadata_assign_property_string(metadata, name, value_str);
++    }
++    else if(type == AMF_DATA_TYPE_OBJECT) {
++	ret = amf_metadata_parse_object(in, metadata);
++    }
++    else if(type == AMF_DATA_TYPE_MIXEDARRAY) {
++	avio_skip(in, 4);
++	ret = amf_metadata_parse_object(in, metadata);
++    }
++    else if(type == AMF_DATA_TYPE_ARRAY) {
++	ret = amf_metadata_parse_strict_array(in, metadata);
++    }
++    else if(type == AMF_END_OF_OBJECT) {
++	ret = -1; // EOF
++    }
++
++    return ret;
++}
++
++static int amf_metadata_parse(AVIOContext *in, AMFMetadata *metadata)
++{
++    char name[INT16_MAX];
++    int ret;
++
++    if((ret = amf_metadata_read_string_value(in, name, sizeof(name))) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "amfmetadata Failed to read onMetadata string, ret: %d \n", ret);
++	return ret;
++    }
++
++    if(av_strcasecmp(name, "onMetaData")) {
++	av_log(NULL, AV_LOG_ERROR, "amfmetadata Expected onMetadata, str = %s \n", name);
++	return -1;
++    }
++
++    return amf_metadata_parse_value(in, metadata, name);
++}
++
++int ff_parse_amf_metadata(uint8_t *buffer, int buffer_size, AMFMetadata *metadata)
++{
++    AVIOContext *in;
++    int ret;
++
++    if(!buffer)
++	return 0;
++    if(buffer_size <= 0)
++	return 0;
++
++    in = avio_alloc_context(buffer, buffer_size,
++	0, NULL, NULL, NULL, NULL);
++    if(!in)
++	return AVERROR(ENOMEM);
++
++    ret = amf_metadata_parse(in, metadata);
++    av_free(in);
++
++    return ret;
++}
+diff --git a/libavformat/amfmetadata.h b/libavformat/amfmetadata.h
+new file mode 100644
+index 0000000..c47cd6e
+--- /dev/null
++++ b/libavformat/amfmetadata.h
+@@ -0,0 +1,47 @@
++/*
++ * Adobe Action Message Format Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Action Message Format Parser
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ * @see http://www.adobe.com/content/dam/Adobe/en/devnet/amf/pdf/amf-file-format-spec.pdf
++ */
++
++#include "libavcodec/avcodec.h"
++
++typedef struct AMFMetadata {
++    int width;
++    int height;
++    int frame_rate;
++    int audio_sample_rate;
++    int audio_sample_size;
++    int nb_audio_channels;
++    int audio_data_rate;
++    int video_data_rate;
++    int audio_stream_need_parsing;
++
++    enum AVCodecID audio_codec_id;
++    enum AVCodecID video_codec_id;
++} AMFMetadata;
++
++int ff_parse_amf_metadata(uint8_t *buffer, int buffer_size, AMFMetadata *metadata);
+diff --git a/libavformat/f4fbox.c b/libavformat/f4fbox.c
+new file mode 100644
+index 0000000..393fbee
+--- /dev/null
++++ b/libavformat/f4fbox.c
+@@ -0,0 +1,345 @@
++/*
++ * Adobe Fragmented F4V File (F4F) Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Fragmented F4V File (F4F) Parser for Adobe HDS
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ */
++
++#include "f4fbox.h"
++#include "avformat.h"
++
++static int f4fbox_parse_single_box(AVIOContext *in, void *opague);
++
++static int f4fbox_parse_asrt(AVIOContext *in, int64_t data_size, void *opague)
++{
++    F4FBootstrapInfoBox *parent = (F4FBootstrapInfoBox*)opague;
++    F4FSegmentRunTableBox *asrt;
++    F4FSegmentRunEntry *entry;
++    uint32_t segment_run_entry_count;
++    char url[1024];
++    int i;
++
++    asrt = av_mallocz(sizeof(F4FSegmentRunTableBox));
++    if(!asrt)
++        return AVERROR(ENOMEM);
++
++    parent->segment_run_table_boxes[parent->nb_segment_run_table_boxes] = asrt;
++    parent->nb_segment_run_table_boxes++;
++
++    asrt->version = avio_r8(in);
++    asrt->flags = avio_rb24(in);
++
++    asrt->nb_quality_entries = avio_r8(in);
++    if (asrt->nb_quality_entries)
++	asrt->quality_entries = (char **) av_malloc(asrt->nb_quality_entries * sizeof(char *));
++    for(i = 0; i < asrt->nb_quality_entries; i++) {
++        avio_get_str(in, sizeof(url), url, sizeof(url));
++        av_log(NULL, AV_LOG_DEBUG, "f4fbox asrt quality[%d]=%s\n", i, url);
++	asrt->quality_entries[i] = av_strdup(url);
++    }
++
++    segment_run_entry_count = avio_rb32(in);
++    if(segment_run_entry_count > MAX_NB_SEGMENT_RUN_ENTRIES) {
++        av_log(NULL, AV_LOG_ERROR, "f4fbox segment run entry count exceeds maximum, %d > %d \n",
++            segment_run_entry_count, MAX_NB_SEGMENT_RUN_ENTRIES);
++        segment_run_entry_count = MAX_NB_SEGMENT_RUN_ENTRIES;
++    }
++
++    for(i = 0; i < segment_run_entry_count; i++) {
++        entry = av_mallocz(sizeof(F4FSegmentRunEntry));
++        if(!entry)
++            return AVERROR(ENOMEM);
++
++        asrt->segment_run_entries[asrt->nb_segment_run_entries] = entry;
++        asrt->nb_segment_run_entries++;
++
++        entry->first_segment = avio_rb32(in);
++        entry->fragments_per_segment = avio_rb32(in);
++    }
++
++    return 0;
++}
++
++static int f4fbox_parse_afrt(AVIOContext *in, int64_t data_size, void *opague)
++{
++    F4FBootstrapInfoBox *parent = (F4FBootstrapInfoBox*)opague;
++    F4FFragmentRunTableBox *afrt;
++    F4FFragmentRunEntry *entry;
++    uint32_t fragment_run_entry_count;
++    char url[1024];
++    int i;
++
++    afrt = av_mallocz(sizeof(F4FFragmentRunTableBox));
++    if(!afrt)
++        return AVERROR(ENOMEM);
++
++    parent->fragment_run_table_boxes[parent->nb_fragment_run_table_boxes] = afrt;
++    parent->nb_fragment_run_table_boxes++;
++
++    afrt->version = avio_r8(in);
++    afrt->flags = avio_rb24(in);
++
++    afrt->timescale = avio_rb32(in);
++
++    afrt->nb_quality_entries = avio_r8(in);
++    if (afrt->nb_quality_entries)
++	afrt->quality_entries = (char **) av_malloc(afrt->nb_quality_entries * sizeof(char *));
++    for(i = 0; i < afrt->nb_quality_entries; i++) {
++        avio_get_str(in, sizeof(url), url, sizeof(url));
++        av_log(NULL, AV_LOG_DEBUG, "f4fbox afrt quality[%d]=%s\n", i, url);
++	afrt->quality_entries[i] = av_strdup(url);
++    }
++
++    fragment_run_entry_count = avio_rb32(in);
++    if(fragment_run_entry_count > MAX_NB_FRAGMENT_RUN_ENTRIES) {
++        av_log(NULL, AV_LOG_ERROR, "f4fbox fragment run entry count exceeds maximum, %d > %d \n",
++            fragment_run_entry_count, MAX_NB_FRAGMENT_RUN_ENTRIES);
++        fragment_run_entry_count = MAX_NB_FRAGMENT_RUN_ENTRIES;
++    }
++
++    for(i = 0; i < fragment_run_entry_count; i++) {
++        entry = av_mallocz(sizeof(F4FFragmentRunEntry));
++        if(!entry)
++            return AVERROR(ENOMEM);
++
++        afrt->fragment_run_entries[afrt->nb_fragment_run_entries] = entry;
++        afrt->nb_fragment_run_entries++;
++
++        entry->first_fragment = avio_rb32(in);
++        entry->first_fragment_time_stamp = avio_rb64(in);
++        entry->fragment_duration = avio_rb32(in);
++        if(entry->fragment_duration == 0) {
++            entry->discontinuity_indicator = avio_r8(in);
++        }
++    }
++
++    return 0;
++}
++
++
++static int f4fbox_parse_abst(AVIOContext *in, int64_t data_size, void *opague)
++{
++    F4FBox *parent = (F4FBox*)opague;
++    F4FBootstrapInfoBox *abst = &(parent->abst);
++    uint8_t server_entry_count;
++    uint8_t segment_run_table_count, fragment_run_table_count;
++    uint8_t byte;
++    char url[1024];
++    int i, ret;
++
++    abst->version = avio_r8(in);
++    abst->flags = avio_rb24(in);
++    abst->bootstrap_info_version = avio_rb32(in);
++
++    byte = avio_r8(in);
++    abst->profile = (byte >> 6) & 0x03;
++    abst->is_live = (byte >> 5) & 0x01;
++    abst->is_update = (byte >> 4) & 0x01;
++
++    abst->timescale = avio_rb32(in);
++    abst->current_media_time = avio_rb64(in);
++    abst->smpte_time_code_offset = avio_rb64(in);
++
++    avio_get_str(in, sizeof(abst->movie_id), abst->movie_id, sizeof(abst->movie_id));
++
++    server_entry_count = avio_r8(in);
++    for(i = 0; i < server_entry_count; i++) {
++        avio_get_str(in, sizeof(url), url, sizeof(url));
++    }
++
++    abst->nb_quality_entries = avio_r8(in);
++    if (abst->nb_quality_entries)
++	abst->quality_entries = (char **) av_malloc(abst->nb_quality_entries * sizeof(char *));
++    for(i = 0; i < abst->nb_quality_entries; i++) {
++        avio_get_str(in, sizeof(url), url, sizeof(url));
++        av_log(NULL, AV_LOG_DEBUG, "f4fbox abst quality[%d]=%s\n", i, url);
++	abst->quality_entries[i] = av_strdup(url);
++    }
++
++    avio_get_str(in, sizeof(abst->drm_data), abst->drm_data, sizeof(abst->drm_data));
++    avio_get_str(in, sizeof(abst->metadata), abst->metadata, sizeof(abst->metadata));
++
++    segment_run_table_count = avio_r8(in);
++    for(i = 0; i < segment_run_table_count; i++) {
++        if((ret = f4fbox_parse_single_box(in, abst)) < 0) {
++            av_log(NULL, AV_LOG_ERROR, "f4fbox Failed to parse asrt box, ret: %d \n", ret);
++            return ret;
++        }
++    }
++
++    fragment_run_table_count = avio_r8(in);
++    for(i = 0; i < fragment_run_table_count; i++) {
++        if((ret = f4fbox_parse_single_box(in, abst)) < 0) {
++            av_log(NULL, AV_LOG_ERROR, "f4fbox Failed to parse afrt box, ret: %d \n", ret);
++            return ret;
++        }
++    }
++
++    return 0;
++}
++
++static int f4fbox_parse_mdat(AVIOContext *in, int64_t data_size, void *opague)
++{
++    F4FBox *parent = (F4FBox*)opague;
++    F4FMediaDataBox *mdat = &(parent->mdat);
++
++    mdat->data = av_mallocz(sizeof(uint8_t)*data_size);
++    if(!mdat->data)
++        return AVERROR(ENOMEM);
++
++    mdat->size = data_size;
++    avio_read(in, mdat->data, mdat->size);
++
++    return 0;
++}
++
++static int f4fbox_parse_single_box(AVIOContext *in, void *opague)
++{
++    int64_t bytes_read, bytes_left, start_pos, end_pos;
++    uint64_t size;
++    uint32_t type;
++    int ret = 0;
++
++    bytes_read = 0;
++    start_pos = avio_tell(in);
++
++    size = avio_rb32(in);
++    type = avio_rl32(in);
++    bytes_read += 8;
++
++    if(size == 1) {/* 64 bit extended size */
++        size = avio_rb64(in) - 8;
++        bytes_read += 8;
++    }
++
++    if(size == 0)
++        return -1;
++
++    if(type == MKTAG('a', 'b', 's', 't')) {
++        ret = f4fbox_parse_abst(in, size, opague);
++    }
++    if(type == MKTAG('a', 's', 'r', 't')) {
++        ret = f4fbox_parse_asrt(in, size, opague);
++    }
++    if(type == MKTAG('a', 'f', 'r', 't')) {
++        ret = f4fbox_parse_afrt(in, size, opague);
++    }
++    if(type == MKTAG('m', 'd', 'a', 't')) {
++        ret = f4fbox_parse_mdat(in, size, opague);
++    }
++
++    if(ret < 0)
++        return ret;
++
++    end_pos = avio_tell(in);
++    bytes_left = size - (end_pos - start_pos);
++    if(bytes_left > 0)
++        avio_skip(in, bytes_left);
++
++    bytes_read += size;
++
++    return bytes_read;
++}
++
++static int f4fbox_parse(AVIOContext *in, int64_t data_size, void *opague)
++{
++    int64_t bytes_read = 0;
++    int ret;
++
++    while(!url_feof(in) && bytes_read + 8 < data_size) {
++        if((ret = f4fbox_parse_single_box(in, opague)) < 0) {
++            av_log(NULL, AV_LOG_ERROR, "f4fbox Failed to parse box, ret: %d \n", ret);
++            return ret;
++        }
++        bytes_read += ret;
++    }
++
++    return 0;
++}
++
++int ff_parse_f4f_box(uint8_t *buffer, int buffer_size, F4FBox *box)
++{
++    AVIOContext *in;
++    int ret;
++
++    in = avio_alloc_context(buffer, buffer_size, 0, NULL, NULL, NULL, NULL);
++    if(!in)
++        return AVERROR(ENOMEM);
++
++    ret = f4fbox_parse(in, buffer_size, box);
++    av_free(in);
++
++    return ret;
++}
++
++int ff_free_f4f_box(F4FBox *box)
++{
++    F4FBootstrapInfoBox *abst;
++    F4FSegmentRunTableBox *asrt;
++    F4FSegmentRunEntry *sre;
++    F4FFragmentRunTableBox *afrt;
++    F4FFragmentRunEntry *fre;
++    F4FMediaDataBox *mdat;
++    int i, j;
++
++    abst = &(box->abst);
++    for(j = 0; j < abst->nb_quality_entries; j++)
++	av_freep(&abst->quality_entries[j]);
++    if (abst->quality_entries)
++	av_freep(&abst->quality_entries);
++
++    for(i = 0; i < abst->nb_segment_run_table_boxes; i++) {
++        asrt = abst->segment_run_table_boxes[i];
++        for(j = 0; j < asrt->nb_quality_entries; j++)
++	    av_freep(&asrt->quality_entries[j]);
++	if (asrt->quality_entries)
++	    av_freep(&asrt->quality_entries);
++        for(j = 0; j < asrt->nb_segment_run_entries; j++) {
++            sre = asrt->segment_run_entries[j];
++            av_freep(&sre);
++        }
++        av_freep(&asrt);
++    }
++
++    for(i = 0; i < abst->nb_fragment_run_table_boxes; i++) {
++        afrt = abst->fragment_run_table_boxes[i];
++        for(j = 0; j < afrt->nb_quality_entries; j++)
++	    av_freep(&afrt->quality_entries[j]);
++	if (afrt->quality_entries)
++	    av_freep(&afrt->quality_entries);
++        for(j = 0; j < afrt->nb_fragment_run_entries; j++) {
++            fre = afrt->fragment_run_entries[j];
++            av_freep(&fre);
++        }
++        av_freep(&afrt);
++    }
++
++    mdat = &(box->mdat);
++    if(mdat->size > 0)
++        av_freep(&mdat->data);
++
++    memset(box, 0x00, sizeof(F4FBox));
++
++    return 0;
++}
+diff --git a/libavformat/f4fbox.h b/libavformat/f4fbox.h
+new file mode 100644
+index 0000000..da3ac24
+--- /dev/null
++++ b/libavformat/f4fbox.h
+@@ -0,0 +1,110 @@
++/*
++ * Adobe Fragmented F4V File (F4F) Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Fragmented F4V File (F4F) Parser for Adobe HDS
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ */
++
++#include "avio_internal.h"
++
++#define MAX_NB_SEGMENT_RUN_TABLE_BOXES 256
++#define MAX_NB_FRAGMENT_RUN_TABLE_BOXES 256
++
++#define MAX_NB_SEGMENT_RUN_ENTRIES 1024
++#define MAX_NB_FRAGMENT_RUN_ENTRIES 1024
++
++typedef struct F4FFragmentRunEntry {
++    uint32_t first_fragment;
++    uint64_t first_fragment_time_stamp;
++    uint32_t fragment_duration;
++    uint8_t discontinuity_indicator;
++} F4FFragmentRunEntry;
++
++typedef struct F4FFragmentRunTableBox {
++    uint8_t version;
++    uint32_t flags;
++    uint32_t timescale;
++
++    uint8_t nb_quality_entries;
++    char **quality_entries;
++
++    uint32_t nb_fragment_run_entries;
++    F4FFragmentRunEntry *fragment_run_entries[MAX_NB_FRAGMENT_RUN_ENTRIES];
++} F4FFragmentRunTableBox;
++
++typedef struct F4FSegmentRunEntry {
++    uint32_t first_segment;
++    uint32_t fragments_per_segment;
++} F4FSegmentRunEntry;
++
++typedef struct F4FSegmentRunTableBox {
++    uint8_t version;
++    uint32_t flags;
++
++    uint8_t nb_quality_entries;
++    char **quality_entries;
++
++    uint32_t nb_segment_run_entries;
++    F4FSegmentRunEntry *segment_run_entries[MAX_NB_SEGMENT_RUN_ENTRIES];
++} F4FSegmentRunTableBox;
++
++typedef struct F4FBootstrapInfoBox {
++    uint8_t version;
++    uint32_t flags;
++    uint32_t bootstrap_info_version;
++
++    uint8_t profile;
++    uint8_t is_live;
++    uint8_t is_update;
++
++    uint32_t timescale;
++    uint64_t current_media_time;
++    uint64_t smpte_time_code_offset;
++
++    char movie_id[1024];
++    char drm_data[1024];
++    char metadata[1024];
++
++    uint8_t nb_quality_entries;
++    char **quality_entries;
++
++    uint8_t nb_segment_run_table_boxes;
++    F4FSegmentRunTableBox *segment_run_table_boxes[MAX_NB_SEGMENT_RUN_TABLE_BOXES];
++
++    uint8_t nb_fragment_run_table_boxes;
++    F4FFragmentRunTableBox *fragment_run_table_boxes[MAX_NB_FRAGMENT_RUN_TABLE_BOXES];
++} F4FBootstrapInfoBox;
++
++typedef struct F4FMediaDataBox {
++    uint32_t size;
++    uint8_t *data;
++} F4FMediaDataBox;
++
++typedef struct F4FBox {
++    F4FBootstrapInfoBox abst;
++    F4FMediaDataBox mdat;
++} F4FBox;
++
++int ff_parse_f4f_box(uint8_t *buffer, int buffer_size, F4FBox *box);
++int ff_free_f4f_box(F4FBox *box);
+diff --git a/libavformat/f4mmanifest.c b/libavformat/f4mmanifest.c
+new file mode 100644
+index 0000000..b33247b
+--- /dev/null
++++ b/libavformat/f4mmanifest.c
+@@ -0,0 +1,256 @@
++/*
++ * Adobe Media Manifest (F4M) File Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Media Manifest (F4M) File Parser
++ * @author Cory McCarthy
++ * @see http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/hds/pdfs/adobe-media-manifest-specification.pdf
++ */
++
++#include "f4mmanifest.h"
++#include "libavutil/avstring.h"
++#include "libavutil/base64.h"
++#include <roxml.h>
++
++static int f4m_parse_bootstrap_info_node(node_t * node, F4MBootstrapInfo *bootstrap_info)
++{
++    const char  *p;
++    uint8_t *dst;
++    int ret;
++    node_t *attr;
++
++    attr = roxml_get_attr(node, "id", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        av_strlcpy(bootstrap_info->id, p, sizeof(bootstrap_info->id));
++    }
++
++    attr = roxml_get_attr(node, "url", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        av_strlcpy(bootstrap_info->url, p, sizeof(bootstrap_info->url));
++    }
++
++    attr = roxml_get_attr(node, "profile", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        av_strlcpy(bootstrap_info->profile, p, sizeof(bootstrap_info->profile));
++    }
++
++    p = roxml_get_content(node, NULL, 0, NULL);
++    if(p) {
++        dst = av_mallocz(sizeof(uint8_t)*strlen(p));
++        if(!dst)
++            return AVERROR(ENOMEM);
++
++        if((ret = av_base64_decode(dst, p, strlen(p))) < 0) {
++            av_log(NULL, AV_LOG_ERROR, "f4mmanifest Failed to decode bootstrap node base64 metadata, ret: %d \n", ret);
++            av_free(dst);
++            return ret;
++        }
++
++        bootstrap_info->metadata = av_mallocz(sizeof(uint8_t)*ret);
++        if(!bootstrap_info->metadata)
++            return AVERROR(ENOMEM);
++
++        bootstrap_info->metadata_size = ret;
++        memcpy(bootstrap_info->metadata, dst, ret);
++
++        av_free(dst);
++    }
++
++    return 0;
++}
++
++static int f4m_parse_metadata_node(node_t * node, F4MMedia *media)
++{
++    const char  *p = NULL;
++    uint8_t *dst;
++    int ret;
++
++    node_t * metadata_node = roxml_get_chld(node, NULL, 0);
++    while(metadata_node) {
++        if(!strcmp(roxml_get_name(metadata_node, NULL, 0), "metadata")) {
++            p = roxml_get_content(metadata_node, NULL, 0, NULL);
++            break;
++        }
++        metadata_node = roxml_get_next_sibling(metadata_node);
++    }
++
++    if(!p)
++        return 0;
++
++    dst = av_mallocz(sizeof(uint8_t)*strlen(p));
++    if(!dst)
++        return AVERROR(ENOMEM);
++
++    if((ret = av_base64_decode(dst, p, strlen(p))) < 0) {
++        av_log(NULL, AV_LOG_ERROR, "f4mmanifest Failed to decode base64 metadata, ret: %d \n", ret);
++        av_free(dst);
++        return ret;
++    }
++
++    media->metadata = av_mallocz(sizeof(uint8_t)*ret);
++    if(!media->metadata)
++        return AVERROR(ENOMEM);
++
++    media->metadata_size = ret;
++    memcpy(media->metadata, dst, ret);
++
++    av_free(dst);
++
++    return 0;
++}
++
++static int f4m_parse_media_node(node_t * node, F4MMedia *media)
++{
++    const char  *p;
++    int ret;
++    node_t * attr;
++
++    attr = roxml_get_attr(node, "bitrate", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        media->bitrate = strtoul(p, NULL, 10);
++    }
++
++    attr = roxml_get_attr(node, "url", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        av_strlcpy(media->url, p, sizeof(media->url));
++    }
++
++    attr = roxml_get_attr(node, "bootstrapInfoId", 0);
++    p =roxml_get_content(attr,NULL,0,NULL);
++    if(p) {
++        av_strlcpy(media->bootstrap_info_id, p, sizeof(media->bootstrap_info_id));
++    }
++
++    if((ret = f4m_parse_metadata_node(node, media)) < 0) {
++        return ret;
++    }
++
++    return 0;
++}
++
++static int f4m_parse_manifest_node(node_t * root_node, F4MManifest *manifest)
++{
++    F4MBootstrapInfo *bootstrap_info;
++    F4MMedia *media;
++    node_t * node;
++    const char  *node_content;
++    int ret = 0,chld_idx=0;
++
++    for (chld_idx=0; chld_idx<roxml_get_chld_nb(root_node); chld_idx++){
++	node = roxml_get_chld(root_node, NULL, chld_idx);
++	const char * node_name = roxml_get_name(node, NULL, 0);
++        if(!strcmp(node_name, "text"))
++            continue;
++
++	node_content = roxml_get_content(node, NULL, 0, NULL);
++
++        if(!strcmp(node_name, "id") && node_content) {
++            av_strlcpy(manifest->id, node_content, sizeof(manifest->id));
++        } else if(!strcmp(node_name, "streamType") && node_content) {
++            av_strlcpy(manifest->stream_type, node_content, sizeof(manifest->stream_type));
++        } else if(!strcmp(node_name, "bootstrapInfo")) {
++            bootstrap_info = av_mallocz(sizeof(F4MBootstrapInfo));
++            if(!bootstrap_info)
++                return AVERROR(ENOMEM);
++            manifest->bootstraps[manifest->nb_bootstraps++] = bootstrap_info;
++            ret = f4m_parse_bootstrap_info_node(node, bootstrap_info);
++        } else if(!strcmp(node_name, "media")) {
++            media = av_mallocz(sizeof(F4MMedia));
++            if(!media)
++                return AVERROR(ENOMEM);
++            manifest->media[manifest->nb_media++] = media;
++            ret = f4m_parse_media_node(node, media);
++        } else if (!strcmp(node_name, "duration")) {
++	    double duration = strtod(node_content, NULL);
++	    manifest->duration = duration * AV_TIME_BASE;
++	}
++
++        if(ret < 0)
++            return ret;
++    }
++
++    return 0;
++}
++
++static int f4m_parse_xml_file(uint8_t *buffer, int size, F4MManifest *manifest)
++{
++    node_t * doc;
++    node_t * root_node;
++    int ret;
++
++    doc = roxml_load_buf(buffer);
++    if(!doc) {
++        return -1;
++    }
++
++    doc = roxml_get_root(doc);
++    root_node = roxml_get_chld(doc, NULL, 0);
++    if(!root_node) {
++        av_log(NULL, AV_LOG_ERROR, "f4mmanifest Root element not found \n");
++        roxml_close(doc);
++        return -1;
++    }
++    const char * root_node_name = roxml_get_name(root_node, NULL, 0);
++    if(strcmp(root_node_name, "manifest")) {
++        av_log(NULL, AV_LOG_ERROR, "f4mmanifest Root element is not named manifest, name = %s \n", root_node_name);
++        roxml_close(doc);
++        return -1;
++    }
++
++    ret = f4m_parse_manifest_node(root_node, manifest);
++    roxml_close(doc);
++
++    return ret;
++}
++
++int ff_parse_f4m_manifest(uint8_t *buffer, int size, F4MManifest *manifest)
++{
++    return f4m_parse_xml_file(buffer, size, manifest);
++}
++
++int ff_free_manifest(F4MManifest *manifest)
++{
++    F4MBootstrapInfo *bootstrap_info;
++    F4MMedia *media;
++    int i;
++
++    for(i = 0; i < manifest->nb_bootstraps; i++) {
++        bootstrap_info = manifest->bootstraps[i];
++        av_freep(&bootstrap_info->metadata);
++        av_freep(&bootstrap_info);
++    }
++
++    for(i = 0; i < manifest->nb_media; i++) {
++        media = manifest->media[i];
++        av_freep(&media->metadata);
++        av_freep(&media);
++    }
++
++    memset(manifest, 0x00, sizeof(F4MManifest));
++
++    return 0;
++}
+diff --git a/libavformat/f4mmanifest.h b/libavformat/f4mmanifest.h
+new file mode 100644
+index 0000000..97a5885
+--- /dev/null
++++ b/libavformat/f4mmanifest.h
+@@ -0,0 +1,65 @@
++/*
++ * Adobe Media Manifest (F4M) File Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe Media Manifest (F4M) File Parser
++ * @author Cory McCarthy
++ * @see http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/hds/pdfs/adobe-media-manifest-specification.pdf
++ */
++
++#include "internal.h"
++
++#define MAX_NB_BOOTSTRAPS 32
++#define MAX_NB_MEDIA 32
++
++typedef struct F4MBootstrapInfo {
++    char id[MAX_URL_SIZE];
++    char url[MAX_URL_SIZE];
++    char profile[MAX_URL_SIZE];
++
++    int metadata_size;
++    uint8_t *metadata;
++} F4MBootstrapInfo;
++
++typedef struct F4MMedia {
++    int bitrate;
++    char url[MAX_URL_SIZE];
++    char bootstrap_info_id[MAX_URL_SIZE];
++
++    int metadata_size;
++    uint8_t *metadata;
++} F4MMedia;
++
++typedef struct F4MManifest {
++    char id[MAX_URL_SIZE];
++    char stream_type[MAX_URL_SIZE];
++    int64_t duration;
++
++    int nb_bootstraps;
++    F4MBootstrapInfo *bootstraps[MAX_NB_BOOTSTRAPS];
++
++    int nb_media;
++    F4MMedia *media[MAX_NB_MEDIA];
++} F4MManifest;
++
++int ff_parse_f4m_manifest(uint8_t *buffer, int size, F4MManifest *manifest);
++int ff_free_manifest(F4MManifest *manifest);
+diff --git a/libavformat/flv.h b/libavformat/flv.h
+index db9468f..8d97e06 100644
+--- a/libavformat/flv.h
++++ b/libavformat/flv.h
+@@ -135,4 +135,6 @@ typedef enum {
+     AMF_DATA_TYPE_UNSUPPORTED = 0x0d,
+ } AMFDataType;
+ 
++int flv_amf_get_string(AVIOContext *ioc, char *buffer, int buffsize);
++
+ #endif /* AVFORMAT_FLV_H */
+diff --git a/libavformat/flvdec.c b/libavformat/flvdec.c
+index 07f7b68..afe7e51 100644
+--- a/libavformat/flvdec.c
++++ b/libavformat/flvdec.c
+@@ -305,6 +305,11 @@ static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize)
+     return length;
+ }
+ 
++int flv_amf_get_string(AVIOContext *ioc, char *buffer, int buffsize)
++{
++    return amf_get_string(ioc, buffer, buffsize);
++}
++
+ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
+                                  AVStream *vstream, int64_t max_pos)
+ {
+diff --git a/libavformat/flvtag.c b/libavformat/flvtag.c
+new file mode 100644
+index 0000000..a611ea0
+--- /dev/null
++++ b/libavformat/flvtag.c
+@@ -0,0 +1,408 @@
++/*
++ * Adobe FLV Tag Parser
++ * Copyright (c) 2013 Cory McCarthy
++ * Copyright (c) 2014 martii
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief FLV Tag Parser for Adobe HDS F4F Files
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ */
++
++#include "flvtag.h"
++#include "libavformat/avio.h"
++#include "libavcodec/get_bits.h"
++#include "libavutil/channel_layout.h"
++#include "flv.h"
++
++typedef struct FLVTagAudioHeader {
++    uint8_t sound_format;
++    uint8_t sound_rate;
++    uint8_t sound_size;
++    uint8_t sound_type;
++
++    uint8_t aac_packet_type;
++} FLVTagAudioHeader;
++
++typedef struct FLVTagAudioBody {
++    uint8_t sound_format;
++    uint8_t sound_rate;
++    uint8_t sound_size;
++    uint8_t sound_type;
++
++    uint8_t aac_packet_type;
++} FLVTagAudioBody;
++
++typedef struct FLVTagVideoHeader {
++    uint8_t frame_type;
++    uint8_t codec_id;
++
++    uint8_t avc_packet_type;
++    int32_t cts;
++} FLVTagVideoHeader;
++
++typedef struct FLVTagVideoBody {
++    //AVCDecoderConfigurationRecord
++    uint8_t configuration_version;
++    uint8_t avc_profile_indication;
++    uint8_t profile_compatibility;
++    uint8_t avc_level_indication;
++
++    uint8_t length_size_minus_one;
++
++    uint8_t *sps_data;
++    int sps_data_size;
++
++    uint8_t *pps_data;
++    int pps_data_size;
++} FLVTagVideoBody;
++
++static int flv_tag_parse_audio_header(AVIOContext *in,
++    FLVTagAudioHeader *header)
++{
++    int ret = 0;
++    uint8_t byte;
++
++    byte = avio_r8(in);
++    ret++;
++
++    header->sound_format = byte & FLV_AUDIO_CODECID_MASK;
++    header->sound_rate   = (byte >> FLV_AUDIO_SAMPLERATE_OFFSET) & 0x03;
++    header->sound_size   = (byte >> FLV_AUDIO_SAMPLESSIZE_OFFSET) & 0x01;
++    header->sound_type   = byte & 0x01;
++
++    if(header->sound_format == FLV_CODECID_AAC) {
++	header->aac_packet_type = avio_r8(in);
++	ret++;
++    }
++
++    return ret;
++}
++
++static int flv_tag_parse_audio_body(AVIOContext *in, uint32_t data_size,
++    FLVTagAudioHeader *header, FLVTagAudioBody *body, FLVMediaSample **sample_out)
++{
++    FLVMediaSample *sample;
++
++    if(header->sound_format != FLV_CODECID_AAC) {
++	av_log(NULL, AV_LOG_ERROR, "flvtag Unhandled sound format %d\n", header->sound_format >> FLV_AUDIO_CODECID_OFFSET);
++	return 0;
++    }
++
++    if(header->aac_packet_type == 0) {
++	av_log(NULL, AV_LOG_DEBUG, "flvtag skipped aac_packet_type %d\n", header->aac_packet_type);
++	return 0;
++    }
++
++    if(header->aac_packet_type != 1) {
++	av_log(NULL, AV_LOG_ERROR, "flvtag Unhandled aac_packet_type %d\n", header->aac_packet_type);
++	return 0;
++    }
++
++    sample = av_mallocz(sizeof(FLVMediaSample));
++    if(!sample)
++	return AVERROR(ENOMEM);
++
++    sample->type = AVMEDIA_TYPE_AUDIO;
++
++    sample->data = av_mallocz(sizeof(uint8_t) * data_size);
++    if(!sample->data) {
++	av_free(sample);
++	return AVERROR(ENOMEM);
++    }
++
++    sample->data_size = data_size;
++    avio_read(in, sample->data, sample->data_size);
++
++    if(sample_out)
++	*sample_out = sample;
++
++    return data_size;
++}
++
++static int flv_tag_parse_video_header(AVIOContext *in,
++    FLVTagVideoHeader *header)
++{
++    int ret = 0;
++    uint8_t byte;
++
++    byte = avio_r8(in);
++    ret++;
++
++    header->frame_type = byte >> 4;
++    header->codec_id = byte & 0x0F;
++
++    if(header->codec_id == 0x07) {
++	header->avc_packet_type = avio_r8(in);
++	header->cts = (avio_rb24(in) + 0xff800000) ^ 0xff800000;
++	ret += 4;
++    }
++
++    return ret;
++}
++
++static int flv_tag_parse_video_body(AVIOContext *in, uint32_t data_size,
++    FLVTagVideoHeader *header, FLVTagVideoBody *body, FLVMediaSample **sample_out)
++{
++    FLVMediaSample *sample = NULL;
++    uint8_t *p;
++    uint8_t nb_sps, nb_pps;
++    uint16_t sps_length, pps_length;
++    int i, ret = 0;
++
++    if(header->frame_type == 0x05) {
++	avio_r8(in);
++	return 1;
++    }
++
++    if(header->codec_id != FLV_CODECID_H264) {
++	av_log(NULL, AV_LOG_ERROR, "flvtag Unhandled video codec id, id: %d \n", header->codec_id);
++	return 0;
++    }
++
++    if(header->avc_packet_type == 0x00) {
++	body->configuration_version = avio_r8(in);
++	body->avc_profile_indication = avio_r8(in);
++	body->profile_compatibility = avio_r8(in);
++	body->avc_level_indication = avio_r8(in);
++	ret += 4;
++
++	body->length_size_minus_one = avio_r8(in) & 0x03;
++	ret++;
++
++	if(body->sps_data_size > 0)
++	    av_freep(&body->sps_data);
++	if(body->pps_data_size > 0)
++	    av_freep(&body->pps_data);
++
++	nb_sps = avio_r8(in) & 0x1F;
++	ret++;
++
++	for(i = 0; i < nb_sps; i++) {
++	    sps_length = avio_rb16(in);
++	    ret += 2;
++
++	    body->sps_data = av_realloc(body->sps_data,
++		body->sps_data_size + sps_length + 4);
++	    if(!body->sps_data)
++		return AVERROR(ENOMEM);
++
++	    p = body->sps_data + body->sps_data_size;
++
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x01;
++	    body->sps_data_size += 4;
++
++	    avio_read(in, p, sps_length);
++	    body->sps_data_size += sps_length;
++
++	    ret += sps_length;
++	}
++
++	nb_pps = avio_r8(in);
++	ret++;
++
++	for(i = 0; i < nb_pps; i++) {
++	    pps_length = avio_rb16(in);
++	    ret += 2;
++
++	    body->pps_data = av_realloc(body->pps_data,
++		body->pps_data_size + pps_length + 4);
++	    if(!body->pps_data)
++		return AVERROR(ENOMEM);
++
++	    p = body->pps_data + body->pps_data_size;
++
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x01;
++	    body->pps_data_size += 4;
++
++	    avio_read(in, p, pps_length);
++	    body->pps_data_size += pps_length;
++
++	    ret += pps_length;
++	}
++    }
++    else if(header->avc_packet_type == 0x01) { // AVC NALU
++	sample = av_mallocz(sizeof(FLVMediaSample));
++	if(!sample)
++	    return AVERROR(ENOMEM);
++
++	sample->type = AVMEDIA_TYPE_VIDEO;
++
++	sample->data_size = body->sps_data_size + body->pps_data_size;
++	sample->data_size += 4 + data_size;
++
++	sample->data = av_mallocz(sizeof(uint8_t) * sample->data_size);
++	if(!sample->data) {
++	    av_free(sample);
++	    return AVERROR(ENOMEM);
++	}
++
++	p = sample->data;
++
++	memcpy(p, body->sps_data, body->sps_data_size);
++	p += body->sps_data_size;
++
++	memcpy(p, body->pps_data, body->pps_data_size);
++	p += body->pps_data_size;
++
++	while(ret < data_size) {
++	    int length_size = body->length_size_minus_one + 1;
++	    uint32_t nal_size = 0;
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x00;
++	    *p++ = 0x01;
++
++	    while (length_size) {
++		nal_size <<= 8;
++		nal_size |= avio_r8(in);
++		length_size--;
++		ret++;
++	    }
++
++	    avio_read(in, p, nal_size);
++	    p += nal_size;
++	    ret += nal_size;
++	}
++    }
++
++    if(sample_out)
++	*sample_out = sample;
++
++    return ret;
++}
++
++static int flv_tag_decode_body(uint8_t *buffer, int buffer_size,
++    FLVMediaSample **samples, int *nb_samples_out)
++{
++    FLVMediaSample *sample;
++    AVIOContext *in;
++    FLVTagAudioHeader audio_header;
++    FLVTagAudioBody audio_body;
++    FLVTagVideoHeader video_header;
++    FLVTagVideoBody video_body;
++    uint8_t byte, filter, tag_type;
++    uint32_t data_size, dts, stream_id;
++    int nb_samples = 0;
++    int ret;
++
++    memset(&audio_header, 0x00, sizeof(FLVTagAudioHeader));
++    memset(&audio_body, 0x00, sizeof(FLVTagAudioBody));
++    memset(&video_header, 0x00, sizeof(FLVTagVideoHeader));
++    memset(&video_body, 0x00, sizeof(FLVTagVideoBody));
++
++    in = avio_alloc_context(buffer, buffer_size, 0, NULL, NULL, NULL, NULL);
++    if(!in)
++	return AVERROR(ENOMEM);
++
++    while(!url_feof(in)) {
++	byte = avio_r8(in);
++	filter = byte & 0x20;
++	tag_type = (byte & 0x01F);
++
++	data_size = avio_rb24(in);
++
++	dts = avio_rb24(in);
++	dts |= avio_r8(in) << 24;
++
++	stream_id = avio_rb24(in);
++	if(stream_id != 0) {
++	    av_log(NULL, AV_LOG_ERROR, "flvtag Invalid stream_id %d \n", stream_id);
++	    return -1;
++	}
++
++	if(tag_type == FLV_TAG_TYPE_AUDIO) {
++	    data_size -= flv_tag_parse_audio_header(in, &audio_header);
++	} else if(tag_type == FLV_TAG_TYPE_VIDEO) {
++	    data_size -= flv_tag_parse_video_header(in, &video_header);
++	}
++
++#if 0
++	if(filter) {
++	    //EncryptionTagHeader
++	    //FilterParams
++	}
++#endif
++
++	sample = NULL;
++
++	if(tag_type == FLV_TAG_TYPE_AUDIO) {
++	    if((ret = flv_tag_parse_audio_body(in, data_size,
++		    &audio_header, &audio_body, &sample)) < 0) {
++
++		av_free(in);
++		return ret;
++	    }
++	    data_size -= ret;
++	} else if(tag_type == FLV_TAG_TYPE_VIDEO) {
++	    if((ret = flv_tag_parse_video_body(in, data_size,
++		    &video_header, &video_body, &sample)) < 0) {
++
++		av_free(in);
++		return ret;
++	    }
++	    data_size -= ret;
++	}
++#if 0
++	else if(tag_type == 18) {
++	    //ScriptData
++	}
++#endif
++
++	if(sample) {
++	    sample->dts = dts;
++	    if (tag_type == FLV_TAG_TYPE_VIDEO)
++		    sample->pts = dts + video_header.cts;
++	    else
++		    sample->pts = AV_NOPTS_VALUE;
++	    samples[nb_samples++] = sample;
++	}
++
++	if(data_size) {
++	    avio_skip(in, data_size);
++	}
++	avio_rb32(in);
++    }
++
++    av_free(in);
++
++    if(video_body.sps_data_size > 0)
++	av_free(video_body.sps_data);
++    if(video_body.pps_data_size > 0)
++	av_free(video_body.pps_data);
++
++    if(nb_samples_out)
++	*nb_samples_out = nb_samples;
++
++    return 0;
++}
++
++int ff_decode_flv_body(uint8_t *buffer, int buffer_size,
++    FLVMediaSample **samples, int *nb_samples_out)
++{
++    return flv_tag_decode_body(buffer, buffer_size, samples, nb_samples_out);
++}
+diff --git a/libavformat/flvtag.h b/libavformat/flvtag.h
+new file mode 100644
+index 0000000..51b94b4
+--- /dev/null
++++ b/libavformat/flvtag.h
+@@ -0,0 +1,40 @@
++/*
++ * Adobe FLV Tag Parser
++ * Copyright (c) 2013 Cory McCarthy
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe FLV Tag Parser for Adobe HDS F4F Files
++ * @author Cory McCarthy
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ */
++
++#include "libavutil/avutil.h"
++
++typedef struct FLVMediaSample {
++    enum AVMediaType type;
++    uint64_t dts;
++    uint64_t pts;
++    int data_size;
++    uint8_t *data;
++} FLVMediaSample;
++
++int ff_decode_flv_body(uint8_t *buffer, int buffer_size,
++    FLVMediaSample **samples, int *nb_samples_out);
+diff --git a/libavformat/hdsdec.c b/libavformat/hdsdec.c
+new file mode 100644
+index 0000000..1fadfc8
+--- /dev/null
++++ b/libavformat/hdsdec.c
+@@ -0,0 +1,1036 @@
++/*
++ * Adobe HTTP Dynamic Streaming (HDS) demuxer
++ * Copyright (c) 2013 Cory McCarthy
++ * Copyright (c) 2014 martii
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * @brief Adobe HTTP Dynamic Streaming (HDS) demuxer
++ * @author Cory McCarthy
++ * @see http://www.adobe.com/devnet/hds.html
++ * @see http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/hds/pdfs/adobe-hds-specification.pdf
++ * @see http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/hds/pdfs/adobe-media-manifest-specification.pdf
++ * @see http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
++ *
++ * @note Link for a HDS test player below:
++ * @see http://mediapm.edgesuite.net/edgeflash/public/zeri/debug/Main.html
++ *
++ * @note Test streams are below:
++ * @test http://multiplatform-f.akamaihd.net/z/multi/april11/hdworld/hdworld_,512x288_450_b,640x360_700_b,768x432_1000_b,1024x576_1400_m,1280x720_1900_m,1280x720_2500_m,1280x720_3500_m,.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/april11/cctv/cctv_,512x288_450_b,640x360_700_b,768x432_1000_b,1024x576_1400_m,1280x720_1900_m,1280x720_2500_m,1280x720_3500_m,.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/april11/sintel/sintel-hd_,512x288_450_b,640x360_700_b,768x432_1000_b,1024x576_1400_m,1280x720_1900_m,1280x720_2500_m,1280x720_3500_m,.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/akamai10year/Akamai_10_Year_,200,300,600,800,1000,1500,2500,4000,k.mp4.csmil/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/seeker/LegendofSeeker_16x9_24fps_H264_,400K,650K,1Mbps,1.4Mbps,1.8Mbps,2.5Mbps,.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/will/bunny/big_buck_bunny_,640x360_400,640x360_700,640x360_1000,950x540_1500,1280x720_2000,1280x720_3000,.f4v.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/companion/nba_game/nba_game.mov_,300,600,800,1000,2500,4000,9000,k.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/companion/big_bang_theory/big_bang_theory.mov_,300,600,800,1000,2500,4000,9000,k.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/shuttle/shuttle_,300,600,800,1000,k.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiplatform-f.akamaihd.net/z/multi/up_trailer/up_trailer_720p_,300,600,800,1000,k.mp4.csmil/manifest.f4m?hdcore
++ * @test http://multiformatlive-f.akamaihd.net/z/demostream_1@2131/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/darkknight/darkknight.smil/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/amours/amours.smil/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/robinhood/robinhood.smil/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/wallstreet/wallstreet.smil/manifest.f4m?hdcore
++ * @test http://zerihdndemo-f.akamaihd.net/z/h264/rockandroll/rockandroll.smil/manifest.f4m?hdcore
++ * @test http://184.72.239.149/vod/smil:bigbuckbunny.smil/manifest.f4m
++ */
++
++#include "avformat.h"
++#include "internal.h"
++#include "url.h"
++#include "avio_internal.h"
++#include "libavutil/avstring.h"
++#include "libavutil/parseutils.h"
++#include "libavutil/opt.h"
++#include "libavutil/dict.h"
++#include "libavutil/time.h"
++
++#include "amfmetadata.h"
++#include "f4mmanifest.h"
++#include "f4fbox.h"
++#include "flvtag.h"
++
++#include <unistd.h>
++#include <pthread.h>
++#include <semaphore.h>
++#include <alloca.h>
++
++#define MAX_NB_SAMPLES 1024
++
++struct HDSDownloadThreadData
++{
++    pthread_mutex_t mutex;			// protects access to this struct
++    pthread_t thread;				// download thread id
++    sem_t *to_thread;				// send signal to thread
++    sem_t *to_caller;				// send signal to caller
++    sem_t _to_thread;				// send signal to thread
++    sem_t _to_caller;				// send signal to caller
++    char *cookies;				// cookies, if any
++    char *url;					// current url
++    int run;					// thread will run until == 0
++    int abort;					// setting this to !=0 aborts download
++    uint8_t *buffer;				// set by thread, unset by thread or caller
++    uint32_t buflen;				// set by thread, unset by thread or caller
++    AVIOInterruptCB *interrupt_callback;
++    AVIOInterruptCB *abort_callback;
++    AVIOInterruptCB download_abort_callback;
++};
++
++typedef struct HDSBootstrapInfo {
++    char id[MAX_URL_SIZE];
++    char url[MAX_URL_SIZE];
++    char profile[MAX_URL_SIZE];
++    char *quality;
++
++    F4FBox box;
++} HDSBootstrapInfo;
++
++typedef struct HDSMedia {
++    int media_index;
++    int bitrate;
++    char url[MAX_URL_SIZE];
++    HDSBootstrapInfo *bootstrap_info;
++
++    AVStream *audio_stream;
++    AVStream *video_stream;
++
++    int nb_samples;
++    FLVMediaSample *samples[MAX_NB_SAMPLES];
++    int sample_index;
++
++    unsigned int nb_fragments_read;
++
++    struct HDSDownloadThreadData download_data;
++} HDSMedia;
++
++typedef struct HDSContext {
++    char id[MAX_URL_SIZE];
++    char base_url[MAX_URL_SIZE];
++    int is_live;
++    int last_media_index;
++
++    int nb_bootstraps;
++    HDSBootstrapInfo *bootstrap_info[MAX_NB_BOOTSTRAPS];
++
++    int nb_media;
++    HDSMedia *media[MAX_NB_MEDIA];
++
++    int64_t seek_timestamp;
++    char *cookies;
++} HDSContext;
++
++static void construct_bootstrap_url(const char *base_url, const char *bootstrap_url,
++    const char *suffix, char *url_out, size_t url_size)
++{
++    char *p;
++
++    p = url_out;
++    p += av_strlcat(p, base_url, url_size);
++    p += av_strlcat(p, bootstrap_url, url_size);
++    p += av_strlcat(p, suffix, url_size);
++}
++
++static int download_bootstrap(AVFormatContext *s, HDSBootstrapInfo *bootstrap,
++    uint8_t **buffer_out, int *buffer_size_out)
++{
++    HDSContext *c = s->priv_data;
++    URLContext *puc = NULL;
++    AVDictionary *opts = NULL;
++    char url[MAX_URL_SIZE];
++    uint8_t *buffer;
++    int buffer_size;
++    int ret;
++
++    memset(url, 0x00, sizeof(url));
++
++    if(!av_stristr(bootstrap->url, "?") && av_stristr(s->filename, "?")) {
++	construct_bootstrap_url(c->base_url, bootstrap->url, av_stristr(s->filename, "?"), url, MAX_URL_SIZE);
++    } else {
++	construct_bootstrap_url(c->base_url, bootstrap->url, "", url, MAX_URL_SIZE);
++    }
++
++    av_dict_set(&opts, "cookies", c->cookies, 0);
++    ret = ffurl_open(&puc, url, AVIO_FLAG_READ, &s->interrupt_callback, &opts);
++    av_dict_free(&opts);
++
++    if(ret < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to start downloading bootstrap, ret: %d\n", ret);
++	return ret;
++    }
++
++    buffer_size = ffurl_size(puc);
++    buffer = av_mallocz(buffer_size+FF_INPUT_BUFFER_PADDING_SIZE);
++    if(!buffer)
++	return AVERROR(ENOMEM);
++
++    if((ret = ffurl_read_complete(puc, buffer, buffer_size)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to download bootstrap, ret: %d\n", ret);
++	av_free(buffer);
++	return ret;
++    }
++
++    if (c->cookies)
++	av_freep(&c->cookies);
++    av_opt_get(puc->priv_data, "cookies", 0, (uint8_t **) &c->cookies);
++    if (c->cookies && !strlen(c->cookies))
++	av_freep(&c->cookies);
++
++    if((ret = ffurl_close(puc)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to finish downloading bootstrap, ret: %d\n", ret);
++	av_free(buffer);
++	return ret;
++    }
++
++    if(buffer_out)
++	*buffer_out = buffer;
++    else
++	av_free(buffer);
++
++    if(buffer_size_out)
++	*buffer_size_out = buffer_size;
++
++    return 0;
++}
++
++static int create_bootstrap_info(AVFormatContext *s, F4MBootstrapInfo *f4m_bootstrap_info)
++{
++    HDSContext *c = s->priv_data;
++    HDSBootstrapInfo *bootstrap_info;
++    uint8_t *buffer;
++    int buffer_size, ret;
++
++    bootstrap_info = av_mallocz(sizeof(HDSBootstrapInfo));
++    if(!bootstrap_info)
++	return AVERROR(ENOMEM);
++
++    c->bootstrap_info[c->nb_bootstraps++] = bootstrap_info;
++
++    memcpy(bootstrap_info->id, f4m_bootstrap_info->id, sizeof(bootstrap_info->id));
++    memcpy(bootstrap_info->url, f4m_bootstrap_info->url, sizeof(bootstrap_info->url));
++    memcpy(bootstrap_info->profile, f4m_bootstrap_info->profile, sizeof(bootstrap_info->profile));
++
++    buffer = f4m_bootstrap_info->metadata;
++    buffer_size = f4m_bootstrap_info->metadata_size;
++
++    if(buffer_size > 0) {
++	if((ret = ff_parse_f4f_box(buffer, buffer_size, &(bootstrap_info->box))) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to parse metadata bootstrap box, ret: %d\n", ret);
++	    return ret;
++	}
++    } else {
++	if((ret = download_bootstrap(s, bootstrap_info, &buffer, &buffer_size)) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to download bootstrap, ret: %d\n", ret);
++	    return ret;
++	}
++
++	if((ret = ff_parse_f4f_box(buffer, buffer_size, &(bootstrap_info->box))) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to parse downloaded bootstrap box, ret: %d\n", ret);
++	    return ret;
++	}
++    }
++
++    return 0;
++}
++
++static int create_streams(AVFormatContext *s, HDSMedia *media, AMFMetadata *metadata, int i)
++{
++    if (metadata->video_codec_id) {
++	AVStream *st = avformat_new_stream(s, NULL);
++	if(!st)
++	    return AVERROR(ENOMEM);
++
++	media->video_stream = st;
++	avpriv_set_pts_info(st, 32, 1, 1000);
++	st->discard = AVDISCARD_ALL;
++	st->id = 0 + 2 * i;
++	st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
++	st->codec->codec_id = metadata->video_codec_id;
++	st->codec->width = metadata->width;
++	st->codec->height = metadata->height;
++	st->codec->bit_rate = metadata->video_data_rate * 1000;
++    }
++
++    if (metadata->audio_codec_id) {
++	AVStream *st = avformat_new_stream(s, NULL);
++	if(!st)
++	    return AVERROR(ENOMEM);
++
++	media->audio_stream = st;
++	avpriv_set_pts_info(st, 32, 1, 1000);
++	st->discard = AVDISCARD_ALL;
++	st->id = 1 + 2 * i;
++	st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
++	st->codec->codec_id = metadata->audio_codec_id;
++	st->codec->channels = metadata->nb_audio_channels;
++	st->codec->channel_layout = (st->codec->channels == 2) ?  AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
++	st->codec->sample_rate = metadata->audio_sample_rate;
++	st->codec->sample_fmt = AV_SAMPLE_FMT_S16;
++	st->codec->bit_rate = metadata->audio_data_rate * 1000;
++	st->need_parsing = metadata->audio_stream_need_parsing;
++    }
++
++    return 0;
++}
++
++static int create_media(AVFormatContext *s, F4MMedia *f4m_media, int i)
++{
++    HDSContext *c = s->priv_data;
++    HDSMedia *media;
++    AMFMetadata metadata;
++    int ret, j;
++
++    media = av_mallocz(sizeof(HDSMedia));
++    if(!media)
++	return AVERROR(ENOMEM);
++
++    c->media[c->nb_media++] = media;
++
++    media->media_index = i;
++    media->bitrate = f4m_media->bitrate;
++    memcpy(media->url, f4m_media->url, sizeof(media->url));
++
++    for(j = 0; j < c->nb_bootstraps; j++) {
++	if(!av_strcasecmp(f4m_media->bootstrap_info_id, c->bootstrap_info[j]->id))
++	    continue;
++	media->bootstrap_info = c->bootstrap_info[j];
++	break;
++    }
++
++    memset(&metadata, 0x00, sizeof(AMFMetadata));
++    metadata.nb_audio_channels = 1;
++    if((ret = ff_parse_amf_metadata(f4m_media->metadata, f4m_media->metadata_size, &metadata)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to parse metadata, ret: %d\n", ret);
++	return ret;
++    }
++
++    return create_streams(s, media, &metadata, i);
++}
++
++static int create_pmt(AVFormatContext *s)
++{
++    HDSContext *c = s->priv_data;
++    HDSMedia *media;
++    AVProgram *p;
++    int i, j;
++
++    j = 0;
++    for(i = 0; i < c->nb_media; i++) {
++	media = c->media[i];
++
++	p = av_new_program(s, j++);
++	if(!p)
++	    return AVERROR(ENOMEM);
++
++	av_dict_set(&p->metadata,"name",
++	    av_asprintf("%d kbit/s", media->bitrate), 0);
++
++	if (media->video_stream)
++	    ff_program_add_stream_index(s, p->id, media->video_stream->index);
++	if (media->audio_stream)
++	    ff_program_add_stream_index(s, p->id, media->audio_stream->index);
++    }
++
++    return 0;
++}
++
++static void download_thread_start(AVFormatContext *s, HDSMedia *media);
++
++static int initialize_context(AVFormatContext *s, F4MManifest *manifest)
++{
++    HDSContext *c = s->priv_data;
++    F4MBootstrapInfo *f4m_bootstrap_info;
++    F4MMedia *f4m_media;
++    int i, ret;
++
++    for(i = 0; i < manifest->nb_bootstraps; i++) {
++	f4m_bootstrap_info = manifest->bootstraps[i];
++	if((ret = create_bootstrap_info(s, f4m_bootstrap_info)) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to create bootstrap_info, ret: %d\n", ret);
++	    return ret;
++	}
++    }
++
++    for(i = 0; i < manifest->nb_media; i++) {
++	f4m_media = manifest->media[i];
++	if((ret = create_media(s, f4m_media, i)) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to create media, ret: %d\n", ret);
++	    return ret;
++	}
++    }
++
++    if((ret = create_pmt(s)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to create PMT, ret: %d\n", ret);
++	return ret;
++    }
++
++    if(!av_strcasecmp(manifest->stream_type, "live"))
++	c->is_live = 1;
++
++    s->duration = manifest->duration;
++    c->seek_timestamp = AV_NOPTS_VALUE;
++
++    for(i = 0; i < c->nb_media; i++)
++	download_thread_start(s, c->media[i]);
++
++    return 0;
++}
++
++//#define HDS_ENABLE_LOG_CALLBACK
++#ifdef HDS_ENABLE_LOG_CALLBACK
++static void log_callback(void *ptr __attribute__ ((unused)), int lvl __attribute__ ((unused)), const char *format, va_list ap)
++{
++    vfprintf(stderr, format, ap);
++}
++#endif
++
++static int hds_read_header(AVFormatContext *s)
++{
++    HDSContext *c = s->priv_data;
++    AVIOContext *in = s->pb;
++    F4MManifest manifest;
++    int64_t filesize;
++    uint8_t *buf;
++    char *p;
++    int ret;
++#ifdef HDS_ENABLE_LOG_CALLBACK
++    av_log_set_callback(log_callback);
++#endif
++
++    p = av_stristr(s->filename, "manifest.f4m");
++    if(!p) {
++	av_log(NULL, AV_LOG_ERROR, "hds \"manifest.f4m\" is not a substring of \"%s\"\n", s->filename);
++	return -1;
++    }
++    av_strlcpy(c->base_url, s->filename, p - s->filename + 1);
++
++    filesize = avio_size(in);
++    if(filesize <= 0)
++	return -1;
++
++    buf = av_mallocz(filesize*sizeof(uint8_t));
++    if(!buf)
++	return AVERROR(ENOMEM);
++
++    avio_read(in, buf, filesize);
++
++    memset(&manifest, 0x00, sizeof(F4MManifest));
++    ret = ff_parse_f4m_manifest(buf, filesize, &manifest);
++
++    av_free(buf);
++
++    if (ret > -1)
++	ret = initialize_context(s, &manifest);
++
++    ff_free_manifest(&manifest);
++
++    return ret;
++}
++
++static void construct_fragment_url(const char *base_url, const char *media_url,
++    unsigned int segment, unsigned int fragment, const char *suffix, char *url_out, size_t url_size)
++{
++    char *p;
++    char *fragment_str;
++
++    p = url_out;
++    p += av_strlcat(p, base_url, url_size);
++    p += av_strlcat(p, media_url, url_size);
++
++    fragment_str = av_asprintf("Seg%u-Frag%u", segment, fragment);
++    p += av_strlcat(p, fragment_str, url_size);
++    av_free(fragment_str);
++
++    p += av_strlcat(p, suffix, url_size);
++}
++
++static int get_fragment_offset(HDSMedia *media, int64_t timestamp)
++{
++    F4FBootstrapInfoBox *abst = &(media->bootstrap_info->box.abst);
++    int fragments_max = 0;
++    int i, j;
++
++    for(i = 0; i < abst->nb_segment_run_table_boxes; i++) {
++	F4FSegmentRunTableBox *asrt = abst->segment_run_table_boxes[i];
++	int found = 0;
++	if (asrt->nb_quality_entries && media->bootstrap_info->quality)
++	    for(j = 0; !found && j < asrt->nb_quality_entries; j++)
++		found = !strcmp(asrt->quality_entries[j], media->bootstrap_info->quality);
++	else
++	    found = 1;
++
++	if (found) {
++	    F4FSegmentRunEntry *segment_entry = asrt->segment_run_entries[asrt->nb_segment_run_entries - 1];
++	    fragments_max = segment_entry->fragments_per_segment;
++	    break;
++	}
++    }
++
++    for(i = 0; i < abst->nb_fragment_run_table_boxes; i++) {
++	int found = 0;
++	F4FFragmentRunTableBox *afrt = abst->fragment_run_table_boxes[i];
++	if (afrt->nb_quality_entries && media->bootstrap_info->quality)
++	    for(j = 0; !found && j < afrt->nb_quality_entries; j++)
++		found = !strcmp(afrt->quality_entries[j], media->bootstrap_info->quality);
++	else
++	    found = 1;
++
++	if (found) {
++	    for(j = 0; j < afrt->nb_fragment_run_entries; j++) {
++		F4FFragmentRunEntry *fre = afrt->fragment_run_entries[j];
++		int fragcount;
++		if (j + 1 < afrt->nb_fragment_run_entries) {
++		    fragcount = afrt->fragment_run_entries[j + 1]->first_fragment - fre->first_fragment;
++		    fragments_max -= fragcount;
++		} else
++		    fragcount = fragments_max;
++
++		if (timestamp >= fre->first_fragment_time_stamp && timestamp <= fre->first_fragment_time_stamp + fragcount * fre->fragment_duration)
++		    return fre->first_fragment + (timestamp - fre->first_fragment_time_stamp)/fre->fragment_duration;
++	    }
++	    break;
++	}
++    }
++    return 0;
++}
++
++static int get_segment_fragment(int is_live, HDSMedia *media, unsigned int *segment_out, unsigned int *fragment_out)
++{
++    F4FBootstrapInfoBox *abst = &(media->bootstrap_info->box.abst);
++    unsigned int segment = ~0, fragment = ~0, fragments_max = 0;
++    int i, j, skip;
++
++    if (is_live) {
++	// FIXME. This is a crude hack.
++	*segment_out = 1;
++	*fragment_out = media->nb_fragments_read;
++	return 0;
++    }
++
++    skip = media->nb_fragments_read;
++    for(i = 0; segment == ~0 && i < abst->nb_segment_run_table_boxes; i++) {
++	F4FSegmentRunTableBox *asrt = abst->segment_run_table_boxes[i];
++	int found = 0;
++	if (asrt->nb_quality_entries && media->bootstrap_info->quality)
++	    for(j = 0; !found && j < asrt->nb_quality_entries; j++)
++		found = !strcmp(asrt->quality_entries[j], media->bootstrap_info->quality);
++	else
++	    found = 1;
++
++	if (found) {
++	    for (j = 0; segment == ~0 && j < asrt->nb_segment_run_entries; j++) {
++		F4FSegmentRunEntry *segment_entry = asrt->segment_run_entries[j];
++
++		if (segment_entry->fragments_per_segment < skip) {
++		    skip -= segment_entry->fragments_per_segment;
++		    fragments_max = segment_entry->fragments_per_segment;
++		} else
++		    segment = segment_entry->first_segment;
++	    }
++	    break;
++	}
++    }
++
++    if(segment == ~0) {
++	av_log(NULL, AV_LOG_ERROR, "hds segment entry for next fragment (%u) not found, skip: %d\n", media->nb_fragments_read, skip);
++	return 0;
++    }
++
++    skip = media->nb_fragments_read;
++    for(i = 0; fragment == ~0 && i < abst->nb_fragment_run_table_boxes; i++) {
++	int found = 0;
++	F4FFragmentRunTableBox *afrt = abst->fragment_run_table_boxes[i];
++	if (afrt->nb_quality_entries && media->bootstrap_info->quality)
++	    for(j = 0; !found && j < afrt->nb_quality_entries; j++)
++		found = !strcmp(afrt->quality_entries[j], media->bootstrap_info->quality);
++	else
++	    found = 1;
++
++	if (found) {
++	    for(j = 0; fragment == ~0 && j < afrt->nb_fragment_run_entries; j++) {
++		int fragcount;
++		F4FFragmentRunEntry *fre = afrt->fragment_run_entries[j];
++		if (j + 1 < afrt->nb_fragment_run_entries) {
++		    fragcount = afrt->fragment_run_entries[j + 1]->first_fragment - fre->first_fragment;
++		    fragments_max -= fragcount;
++		} else
++		    fragcount = fragments_max;
++
++		if (fragcount < skip)
++		    fragcount -= skip;
++		else {
++		    fragment = fre->first_fragment + skip;
++		    skip = 0;
++		}
++	    }
++	    break;
++	}
++    }
++
++    if (!is_live && skip > 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds fragment %d fragments beyond EOF\n", skip);
++	return AVERROR_EOF;
++    }
++
++    if(fragment == ~0) {
++	av_log(NULL, AV_LOG_ERROR, "hds fragment entry not found\n");
++	return -1;
++    }
++
++    if(segment_out)
++	*segment_out = segment;
++    if(fragment_out)
++	*fragment_out = fragment;
++
++    return 0;
++}
++
++static int download_abort_callback_function(void *opaque)
++{
++    HDSMedia *media = (HDSMedia *) opaque;
++    return media->download_data.abort || ff_check_interrupt(media->download_data.interrupt_callback);
++}
++
++static void *download_thread(void *opaque)
++{
++    HDSMedia *media = (HDSMedia *) opaque;
++
++    while (media->download_data.run && !download_abort_callback_function(media)) {
++	AVDictionary *opts = NULL;
++	URLContext *puc = NULL;
++	uint8_t *buffer = NULL;
++	int buffer_size = 0, ret;
++	char *url = NULL;
++	int url_len;
++	int tries_left = 15;
++
++	if (sem_wait(media->download_data.to_thread))
++	    break;
++	if (!media->download_data.run)
++	    continue;
++
++	pthread_mutex_lock(&media->download_data.mutex);
++	media->download_data.abort = 0;
++	if (media->download_data.buffer)
++	    av_freep(&media->download_data.buffer);
++	media->download_data.buflen = 0;
++	// generate local copies from HDSDownloadThreadData
++	if (media->download_data.cookies)
++	    av_dict_set(&opts, "cookies", media->download_data.cookies, 0);
++	url_len = strlen(media->download_data.url) + 1;
++	url = alloca(url_len);
++	strncpy(url, media->download_data.url, url_len);
++	pthread_mutex_unlock(&media->download_data.mutex);
++	//av_log(NULL, AV_LOG_DEBUG, "%s %d: downloading %s\n", __FILE__,__LINE__, url);
++
++	// initiate download
++	do {
++	    ret = ffurl_open(&puc, url, AVIO_FLAG_READ, &media->download_data.download_abort_callback, &opts);
++	    if (ret < 0) {
++		sleep(1);
++		if (download_abort_callback_function(media))
++		    break;
++		sleep(1);
++		tries_left--;
++	    }
++	} while (ret < 0 && media->download_data.run && !download_abort_callback_function(media) && tries_left > 0);
++
++	if (opts)
++	    av_dict_free(&opts);
++
++	if(ret < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to start downloading url:%s, ret:%d\n", url, ret);
++	} else {
++	    buffer_size = ffurl_size(puc);
++	    if (buffer_size > -1)
++		buffer = av_mallocz(buffer_size+FF_INPUT_BUFFER_PADDING_SIZE);
++	    if(!buffer)
++		av_log(NULL, AV_LOG_DEBUG, "hds Failed to allocate %d bytes buffer\n", buffer_size);
++	}
++
++	if(buffer && (ret = ffurl_read_complete(puc, buffer, buffer_size)) < 0) {
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to download fragment, ret: %d\n", ret);
++	    av_freep(&buffer);
++	}
++
++	pthread_mutex_lock(&media->download_data.mutex);
++	if (media->download_data.abort || !buffer) {
++	    media->download_data.abort = 0;
++	} else {
++	    //av_log(NULL, AV_LOG_DEBUG, "%s %d: downloaded  %s\n", __FILE__,__LINE__, media->download_data.url);
++	    if (media->download_data.cookies)
++		av_freep(&media->download_data.cookies);
++	    av_opt_get(puc->priv_data, "cookies", 0, (uint8_t **) &media->download_data.cookies);
++	    if (media->download_data.cookies && !strlen(media->download_data.cookies))
++		av_freep(&media->download_data.cookies);
++	    media->download_data.buffer = buffer;
++	    media->download_data.buflen = buffer_size;
++	}
++	sem_post(media->download_data.to_caller);	// confirm download
++	pthread_mutex_unlock(&media->download_data.mutex);
++	if (puc)
++	    ffurl_close(puc);
++    }
++    pthread_exit(NULL);
++}
++
++static void download_thread_start(AVFormatContext *s, HDSMedia *media)
++{
++#if defined(__APPLE__)
++    char buf[40];
++#endif
++    pthread_mutex_init(&media->download_data.mutex, NULL);
++#if defined(__APPLE__) // no unnamed semaphores on darwin
++    snprintf(buf, sizeof(buf), "sem_to_thread%d", media->media_index);
++    media->download_data.to_thread = sem_open(buf, O_CREAT, 0644, 0);
++    snprintf(buf, sizeof(buf), "sem_to_caller%d", media->media_index);
++    media->download_data.to_caller = sem_open(buf, O_CREAT, 0644, 0);
++#else
++    sem_init(&media->download_data._to_thread, 0, 0);
++    sem_init(&media->download_data._to_caller, 0, 0);
++    media->download_data.to_thread = &media->download_data._to_thread;
++    media->download_data.to_caller = &media->download_data._to_caller;
++#endif
++    media->download_data.thread = 0;
++    media->download_data.run = 1;
++    media->download_data.abort = 0;
++    media->download_data.url = NULL;
++    media->download_data.buffer = NULL;
++    media->download_data.buflen = 0;
++    media->download_data.cookies = NULL;
++    media->download_data.interrupt_callback = &s->interrupt_callback;
++    media->download_data.download_abort_callback.callback = download_abort_callback_function;
++    media->download_data.download_abort_callback.opaque = media;
++    media->download_data.abort_callback = &media->download_data.download_abort_callback;
++    if (pthread_create(&media->download_data.thread, NULL, download_thread, media))
++	av_log(NULL, AV_LOG_ERROR, "hds: creating download thread failed\n");
++}
++
++static void download_thread_stop(HDSMedia *media)
++{
++    if (media->download_data.thread) {
++#if defined(__APPLE__)
++	char buf[40];
++#endif
++	media->download_data.run = 0;
++	media->download_data.abort = 1;
++	sem_post(media->download_data.to_thread);
++	pthread_join(media->download_data.thread, NULL);
++	media->download_data.thread = 0;
++	if (media->download_data.url)
++		av_freep(&media->download_data.url);
++	if (media->download_data.cookies)
++		av_freep(&media->download_data.cookies);
++	if (media->download_data.buffer)
++		av_freep(&media->download_data.buffer);
++	media->download_data.buflen = 0;
++#if defined(__APPLE__)
++	sem_close(media->download_data.to_thread);
++	sem_close(media->download_data.to_caller);
++	snprintf(buf, sizeof(buf), "sem_to_thread%d", media->media_index);
++	sem_unlink(buf);
++	snprintf(buf, sizeof(buf), "sem_to_caller%d", media->media_index);
++	sem_unlink(buf);
++#else
++	sem_destroy(&media->download_data._to_thread);
++	sem_destroy(&media->download_data._to_caller);
++#endif
++	pthread_mutex_destroy(&media->download_data.mutex);
++    }
++}
++
++static int download_fragment(AVFormatContext *s, HDSMedia *media, uint8_t **buffer_out, int *buffer_size_out)
++{
++    HDSContext *c = s->priv_data;
++    char url[MAX_URL_SIZE];
++    unsigned int segment, fragment;
++    int ret;
++
++    if((ret = get_segment_fragment(c->is_live, media, &segment, &fragment)) < 0)
++	return ret;
++    memset(url, 0x00, sizeof(url));
++    if(!av_stristr(media->url, "?") && av_stristr(s->filename, "?"))
++	construct_fragment_url(c->base_url, media->url, segment, fragment, av_stristr(s->filename, "?"), url, MAX_URL_SIZE);
++    else
++	construct_fragment_url(c->base_url, media->url, segment, fragment, "", url, MAX_URL_SIZE);
++
++    pthread_mutex_lock(&media->download_data.mutex);
++
++    if (!media->download_data.cookies)
++	media->download_data.cookies = av_strdup(c->cookies);
++    if (media->download_data.url && strcmp(media->download_data.url, url)) {
++	// download in progress or finished, but not the wanted one. abort it.
++	media->download_data.abort = 1;	// initiate abort
++	pthread_mutex_unlock(&media->download_data.mutex);
++	sem_wait(media->download_data.to_caller); // wait until current transfer has finished
++	pthread_mutex_lock(&media->download_data.mutex);
++	av_freep(&media->download_data.url);
++    }
++    if (!media->download_data.url) {
++	// queue retrieval of wanted url
++	media->download_data.url = av_strdup(url);
++	sem_post(media->download_data.to_thread);	// initiate download
++    }
++    if (media->download_data.url && !strcmp(media->download_data.url, url)) {
++	// download matches what we want
++	pthread_mutex_unlock(&media->download_data.mutex);
++	sem_wait(media->download_data.to_caller); // wait until finished
++	pthread_mutex_lock(&media->download_data.mutex);
++	av_freep(&media->download_data.url);
++	if (media->download_data.buffer) {
++	    *buffer_out = media->download_data.buffer;
++	    *buffer_size_out = media->download_data.buflen;
++	    media->download_data.buffer = NULL;
++	    media->download_data.buflen = 0;
++	    ret = 0;
++	    media->nb_fragments_read++;
++	    //initiate retrieval of next url
++	    if(!get_segment_fragment(c->is_live, media, &segment, &fragment))
++		memset(url, 0x00, sizeof(url));
++		if(!av_stristr(media->url, "?") && av_stristr(s->filename, "?"))
++		    construct_fragment_url(c->base_url, media->url, segment, fragment, av_stristr(s->filename, "?"), url, MAX_URL_SIZE);
++		else
++		    construct_fragment_url(c->base_url, media->url, segment, fragment, "", url, MAX_URL_SIZE);
++		media->download_data.url = av_strdup(url);
++		sem_post(media->download_data.to_thread);	// initiate download
++	} else {
++	    // finished but failed
++	    ret = AVERROR(EIO);
++	}
++    }
++    pthread_mutex_unlock(&media->download_data.mutex);
++    return ret;
++}
++
++static int get_next_fragment(AVFormatContext *s, HDSMedia *media)
++{
++    F4FBox box;
++    uint8_t *buffer = NULL;
++    int buffer_size = 0, ret;
++
++    if (ff_check_interrupt(media->download_data.interrupt_callback))
++	return AVERROR(EIO);
++
++    if((ret = download_fragment(s, media, &buffer, &buffer_size)) < 0)
++	return ret;
++
++    memset(&box, 0x00, sizeof(F4FBox));
++    if((ret = ff_parse_f4f_box(buffer, buffer_size, &box)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to parse bootstrap box, ret: %d\n", ret);
++	av_free(buffer);
++	ff_free_f4f_box(&box);
++	return ret;
++    }
++    av_free(buffer);
++
++    if((ret = ff_decode_flv_body(box.mdat.data, box.mdat.size, media->samples, &media->nb_samples)) < 0) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to decode FLV body, ret: %d\n", ret);
++	ff_free_f4f_box(&box);
++	return ret;
++    }
++
++    ff_free_f4f_box(&box);
++
++    return 0;
++}
++
++static void read_next_sample(HDSMedia *media, AVPacket *pkt)
++{
++    FLVMediaSample *sample;
++
++    sample = media->samples[media->sample_index];
++    media->sample_index++;
++
++    av_new_packet(pkt, sample->data_size);
++    memcpy(pkt->data, sample->data, sample->data_size);
++
++    pkt->dts = sample->dts;
++    pkt->pts = sample->pts;
++
++    if(sample->type == AVMEDIA_TYPE_VIDEO && media->video_stream)
++	pkt->stream_index = media->video_stream->index;
++    else if(sample->type == AVMEDIA_TYPE_AUDIO && media->audio_stream)
++	pkt->stream_index = media->audio_stream->index;
++}
++
++static void clear_samples(HDSMedia *media)
++{
++    FLVMediaSample *sample;
++    int i;
++
++    for(i = 0; i < media->nb_samples; i++) {
++	sample = media->samples[i];
++	av_freep(&sample->data);
++	av_freep(&sample);
++	media->samples[i] = NULL;
++    }
++
++    media->nb_samples = 0;
++    media->sample_index = 0;
++}
++
++static int get_next_packet(AVFormatContext *s, HDSMedia *media, AVPacket *pkt)
++{
++    HDSContext *c = s->priv_data;
++    int ret;
++
++    if (c->is_live && !media->nb_fragments_read) {
++	int64_t ts = media->bootstrap_info->box.abst.current_media_time;
++	media->nb_fragments_read = get_fragment_offset(media, ts);
++	if (media->nb_fragments_read > 1)
++		media->nb_fragments_read--;
++    }
++
++    if (c->seek_timestamp != AV_NOPTS_VALUE) {
++	int64_t ts = c->seek_timestamp;
++	c->seek_timestamp = AV_NOPTS_VALUE;
++	media->nb_fragments_read = get_fragment_offset(media, ts);
++	clear_samples(media);
++    }
++
++    if(media->nb_samples == 0) {
++	if((ret = get_next_fragment(s, media)) < 0) {
++	    return ret;
++	}
++    }
++
++    if(media->nb_samples > 0) {
++	read_next_sample(media, pkt);
++    }
++
++    if(media->sample_index >= media->nb_samples) {
++	clear_samples(media);
++    }
++
++    return 0;
++}
++
++static int hds_read_packet(AVFormatContext *s, AVPacket *pkt)
++{
++    HDSContext *c = s->priv_data;
++    HDSMedia *media = NULL;
++    int i, ret;
++
++    for (i = c->last_media_index + 1; !media && i < c->nb_media; i++) {
++	media = c->media[i];
++	if ((!media->video_stream || (media->video_stream->discard == AVDISCARD_ALL))
++	 && (!media->audio_stream || (media->audio_stream->discard == AVDISCARD_ALL)))
++	    media = NULL;
++    }
++    for (i = 0; !media && i < c->nb_media; i++) {
++	media = c->media[i];
++	if ((!media->video_stream || (media->video_stream->discard == AVDISCARD_ALL))
++	 && (!media->audio_stream || (media->audio_stream->discard == AVDISCARD_ALL)))
++	    media = NULL;
++    }
++    c->last_media_index = i;
++
++    if (media && !media->bootstrap_info && c->nb_bootstraps)
++        media->bootstrap_info = c->bootstrap_info[0];
++
++    if (!media || !media->bootstrap_info) {
++	av_log(NULL, AV_LOG_ERROR, "hds Failed to find valid stream\n");
++	return AVERROR(EIO);
++    }
++
++    if((ret = get_next_packet(s, media, pkt)) < 0) {
++	if(ret != AVERROR_EOF)
++	    av_log(NULL, AV_LOG_ERROR, "hds Failed to get next packet, ret: %d\n", ret);
++	return ret;
++    }
++
++    return 0;
++}
++
++static int hds_close(AVFormatContext *s)
++{
++    HDSContext *c = s->priv_data;
++    HDSBootstrapInfo *bootstrap_info;
++    HDSMedia *media;
++    int i;
++
++    for(i = 0; i < c->nb_media; i++)
++	download_thread_stop(c->media[i]);
++
++    for(i = 0; i < c->nb_bootstraps; i++) {
++	bootstrap_info = c->bootstrap_info[i];
++
++	ff_free_f4f_box(&bootstrap_info->box);
++	av_freep(&bootstrap_info);
++    }
++
++    for(i = 0; i < c->nb_media; i++) {
++	media = c->media[i];
++
++	if (media->download_data.buffer)
++	    av_freep(&media->download_data.buffer);
++
++	clear_samples(media);
++	av_freep(&media);
++    }
++
++    if(c->cookies)
++	av_freep(&c->cookies);
++
++    memset(c, 0x00, sizeof(HDSContext));
++
++    return 0;
++}
++
++static int hds_probe(AVProbeData *p)
++{
++    if(p->filename && av_stristr(p->filename, ".f4m"))
++	return AVPROBE_SCORE_MAX;
++    return 0;
++}
++
++static int hds_read_seek(AVFormatContext *s, int stream_index,
++			       int64_t timestamp, int flags)
++{
++    HDSContext *c = s->priv_data;
++
++    if (flags & AVSEEK_FLAG_BYTE)
++	return AVERROR(ENOSYS);
++    if (s->duration < c->seek_timestamp) {
++	c->seek_timestamp = AV_NOPTS_VALUE;
++	return AVERROR(EIO);
++    }
++    c->seek_timestamp = timestamp;
++
++    if (c->is_live) {
++	int i;
++	for(i = 0; i < c->nb_media; i++)
++	    c->media[i]->nb_fragments_read = 0;
++	c->seek_timestamp = AV_NOPTS_VALUE;
++	return 0;
++    }
++
++    return 0;
++}
++
++AVInputFormat ff_hds_demuxer = {
++    .name	   = "hds",
++    .long_name      = NULL_IF_CONFIG_SMALL("Adobe HTTP Dynamic Streaming Demuxer"),
++    .priv_data_size = sizeof(HDSContext),
++    .read_probe     = hds_probe,
++    .read_header    = hds_read_header,
++    .read_packet    = hds_read_packet,
++    .read_close     = hds_close,
++    .read_seek      = hds_read_seek,
++};
+-- 
+2.4.0
+

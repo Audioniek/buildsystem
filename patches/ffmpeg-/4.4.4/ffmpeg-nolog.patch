@@ -1,0 +1,24 @@
+diff --git a/libavutil/log.c b/libavutil/log.c
+index 5948e50467..528eaa728c 100644
+--- a/libavutil/log.c
++++ b/libavutil/log.c
+@@ -51,7 +51,7 @@ static AVMutex mutex = AV_MUTEX_INITIALIZER;
+ #define BACKTRACE_LOGLEVEL AV_LOG_ERROR
+ #endif
+ 
+-static int av_log_level = AV_LOG_INFO;
++static int av_log_level = AV_LOG_ERROR; // NOT WORKING for libs
+ static int flags;
+ 
+ #define NB_LEVELS 8
+@@ -406,10 +406,6 @@ static void (*av_log_callback)(void*, int, const char*, va_list) =
+ 
+ void av_log(void* avcl, int level, const char *fmt, ...)
+ {
+-    va_list vl;
+-    va_start(vl, fmt);
+-    av_vlog(avcl, level, fmt, vl);
+-    va_end(vl);
+ }
+ 
+ void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state, const char *fmt, ...)

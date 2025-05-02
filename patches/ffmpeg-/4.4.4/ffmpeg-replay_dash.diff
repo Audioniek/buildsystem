@@ -1,0 +1,14 @@
+diff --git a/libavformat/dashdec.c b/libavformat/dashdec.c
+index 983dc85d65..ab61c28296 100644
+--- a/libavformat/dashdec.c
++++ b/libavformat/dashdec.c
+@@ -1401,6 +1401,9 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
+                 } else {
+                     num = pls->first_seq_no + (((c->publish_time - c->time_shift_buffer_depth + pls->fragment_duration) - c->suggested_presentation_delay) * pls->fragment_timescale) / pls->fragment_duration;
+                 }
++            } else if (c->period_start && c->availability_start_time && pls->fragment_timescale) {
++				num = pls->first_seq_no + ((( get_current_time_in_sec() - (c->availability_start_time + c->period_start)) * pls->fragment_timescale) - pls->fragment_duration)/ pls->fragment_duration;
++
+             } else {
+                 num = pls->first_seq_no + (((get_current_time_in_sec() - c->availability_start_time) - c->suggested_presentation_delay) * pls->fragment_timescale) / pls->fragment_duration;
+             }

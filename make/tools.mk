@@ -575,6 +575,7 @@ $(D)/tools-eplayer3: $(D)/bootstrap $(D)/ffmpeg
 		$(MAKE) install DESTDIR=$(TARGET_DIR)
 	$(TOUCH)
 
+
 #
 # exteplayer3
 #
@@ -584,7 +585,7 @@ $(D)/tools-exteplayer3: $(D)/bootstrap $(D)/ffmpeg
 		if [ ! -d m4 ]; then mkdir m4; fi; \
 		autoreconf -fi; \
 		$(CONFIGURE) \
-			--prefix= \
+			--prefix=/usr\
 		; \
 		$(MAKE); \
 		$(MAKE) install DESTDIR=$(TARGET_DIR)
@@ -604,11 +605,175 @@ $(D)/tools-own-tools: $(D)/bootstrap $(D)/libcurl
 		$(MAKE) install DESTDIR=$(TARGET_DIR)
 	$(TOUCH)
 
+#
+# branding-module
+#
+$(D)/tools-branding-module: $(D)/bootstrap $(D)/enigma2
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/branding-module; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		autoreconf -fi; \
+		$(CONFIGURE) \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+#
+# png_util
+#
+$(D)/tools-png_util: $(D)/bootstrap $(D)/libpng
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/png_util; \
+		$(CONFIGURE_TOOLS) \
+			--prefix= \
+			--with-boxmodel=$(BOXTYPE) \
+			--with-boxtype=$(BOXTYPE) \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+
+#
+# gst-player
+#
+GST-PLAYER_CPPFLAGS     = $(shell $(PKG_CONFIG) --cflags --libs gstreamer-1.0)
+GST-PLAYER_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs gstreamer-audio-1.0)
+GST-PLAYER_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs gstreamer-video-1.0)
+GST-PLAYER_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs glib-2.0)
+$(D)/tools-gst-player: $(D)/bootstrap $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_good \
+	$(D)/gst_plugins_bad $(D)/gst_plugins_ugly $(D)/gst_plugin_subsink $(D)/gst_plugins_dvbmediasink
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/gst-player; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		$(CONFIGURE_TOOLS) \
+			CPPFLAGS="$(GST-PLAYER_CPPFLAGS)" \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+
+
+#
+# libemu
+#
+$(D)/tools-libemu: $(D)/bootstrap $(D)/freetype $(D)/libjpeg $(D)/libpng $(D)/zlib
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/libemu; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		$(CONFIGURE_TOOLS) \
+			--prefix= \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+#
+# gst-ifdsrc
+#
+$(D)/tools-gst-ifdsrc: $(D)/bootstrap $(D)/enigma2 $(D)/gstreamer
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/gst-ifdsrc; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		autoreconf -fi; \
+		$(CONFIGURE) \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+#
+# gstplayer
+#
+$(D)/tools-gstplayer: $(D)/bootstrap $(D)/enigma2 $(D)/gstreamer
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/gstplayer; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		autoreconf -fi; \
+		$(CONFIGURE) \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+
+#
+# eplayer4
+#
+EPLAYER4_CPPFLAGS     = $(shell $(PKG_CONFIG) --cflags --libs gstreamer-1.0)
+EPLAYER4_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs gstreamer-audio-1.0)
+EPLAYER4_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs gstreamer-video-1.0)
+EPLAYER4_CPPFLAGS     += $(shell $(PKG_CONFIG) --cflags --libs glib-2.0)
+$(D)/tools-eplayer4: $(D)/bootstrap $(D)/gstreamer $(D)/gst_plugins_base $(D)/gst_plugins_good \
+	$(D)/gst_plugins_bad $(D)/gst_plugins_ugly $(D)/gst_plugin_subsink $(D)/gst_plugins_dvbmediasink
+	$(START_BUILD)
+	set -e; cd $(TOOLS_DIR)/eplayer4; \
+		$(CONFIGURE_TOOLS) \
+			CPPFLAGS="$(EPLAYER4_CPPFLAGS)" \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+#
+# turnoff_power
+#
+$(D)/tools-turnoff_power: $(D)/bootstrap
+	$(START_BUILD)
+	set -e; cd $(TOOLS_DIR)/turnoff_power; \
+		$(CONFIGURE_TOOLS) \
+			--prefix= \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
+#
+# obh-core
+#
+$(D)/tools-obh-core: $(D)/bootstrap $(D)/enigma2
+	$(START_BUILD)
+	$(SET) -e; cd $(TOOLS_DIR)/obh-core; \
+		if [ ! -d m4 ]; then mkdir m4; fi; \
+		autoreconf -fi; \
+		$(CONFIGURE) \
+			--prefix=/usr \
+		; \
+		$(MAKE); \
+		$(MAKE) install DESTDIR=$(TARGET_DIR)
+	$(TOUCH)
+
 TOOLS =
 ifneq ($(OPTIMIZATIONS), $(filter $(OPTIMIZATIONS), small size))
 TOOLS += $(D)/tools-aio-grab
 endif
 TOOLS += $(D)/tools-devinit
+TOOLS += $(D)/tools-aio-grab
+TOOLS += $(D)/tools-femon
+#TOOLS += $(D)/tools-libemu
+TOOLS += $(D)/tools-msgbox
+#TOOLS += $(D)/tools-read-edid
+TOOLS += $(D)/tools-satfind
+#TOOLS += $(D)/tools-eplayer3
+#TOOLS += $(D)/tools-gst-ifdsrc
+TOOLS += $(D)/tools-eplayer4
+TOOLS += $(D)/tools-exteplayer3
+#TOOLS += $(D)/tools-gstplayer
+#TOOLS += $(D)/tools-gst-player
+TOOLS += $(D)/tools-branding-module
+#TOOLS += $(D)/tools-obh-core
+TOOLS += $(D)/tools-libeplayer3
+#TOOLS += $(D)/tools-libeplayer3_org
+TOOLS += $(D)/tools-png_util
+#TOOLS += $(D)/tools-libmme_host
+#TOOLS += $(D)/tools-libmme_image
 ifeq ($(BOXTYPE), $(filter $(BOXTYPE), atemio520 opt9600 opt9600mini opt9600prima))
 TOOLS += $(D)/tools-eeprom-crenova
 endif
